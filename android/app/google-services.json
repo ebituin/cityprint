@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "52361736442",
+    "project_id": "printinghub-207bd",
+    "storage_bucket": "printinghub-207bd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:52361736442:android:2802cc5958d406a8011943",
+        "android_client_info": {
+          "package_name": "com.company.PrintingHub"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "52361736442-732silgmc908qlbr5pbb9a6ssrl2vhu4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC2VWhBSxu49YhzOw5XmC8FS29MRvZRMqg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "52361736442-732silgmc908qlbr5pbb9a6ssrl2vhu4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:52361736442:android:f282fd08ef4c9ee1011943",
+        "android_client_info": {
+          "package_name": "com.google.firebase.presents.cityprint"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "52361736442-732silgmc908qlbr5pbb9a6ssrl2vhu4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC2VWhBSxu49YhzOw5XmC8FS29MRvZRMqg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "52361736442-732silgmc908qlbr5pbb9a6ssrl2vhu4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
