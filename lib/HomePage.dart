@@ -2,20 +2,27 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(MaterialApp(
-    home: HomePage(),
-    routes: {
-      '/login': (context) => Placeholder(), // Replace with actual LoginPage
-    },
-  ));
-}
+
 
 class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Home Page')),
+      appBar: AppBar(
+        title: Text('Home Page'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.shopping_cart),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => OrdersPage()),
+              );
+            },
+          ),
+        ],
+      ),
+      
       drawer: AppDrawer(),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('businesses').snapshots(),
@@ -54,6 +61,67 @@ class HomePage extends StatelessWidget {
   }
 }
 
+class OrdersPage extends StatelessWidget {
+  const OrdersPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text('Orders')),
+        body: Center(child: Text('You must be logged in to view orders.')),
+      );
+    }
+
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('My Orders'),
+          bottom: TabBar(
+            tabs: [
+              Tab(text: 'Pending'),
+              Tab(text: 'Accepted'),
+              Tab(text: 'Cancelled'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: ['pending', 'accepted', 'cancelled'].map((status) {
+            return StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('orders')
+                  .where('userId', isEqualTo: user.uid)
+                  .where('status', isEqualTo: status)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+
+                final orders = snapshot.data!.docs;
+                if (orders.isEmpty) return Center(child: Text('No $status orders.'));
+
+                return ListView(
+                  children: orders.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    return ListTile(
+                      title: Text(data['item']),
+                      subtitle: Text('Quantity: ${data['quantity']}'),
+                      trailing: Text(data['status']),
+                    );
+                  }).toList(),
+                );
+              },
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+
 class BusinessDetailPage extends StatefulWidget {
   final Map<String, dynamic> business;
 
@@ -77,54 +145,32 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
   }
 
   // Function to place an order with quantity
-  Future<void> _placeOrder(BuildContext context) async {
-    try {
-      final items = widget.business['items'] ?? [];
-      final List<Map<String, dynamic>> orders = [];
+  Future<void> _placeOrder() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-      // Check the quantity for each item and create an order if the quantity is greater than 0
-      for (var item in items) {
-        final quantity = _quantities[item] ?? 0;
-        if (quantity > 0) {
-          orders.add({
-            'item': item,
-            'quantity': quantity,
-            'status': 'pending',
-          });
-        }
+    final firestore = FirebaseFirestore.instance;
+
+    for (var entry in _quantities.entries) {
+      if (entry.value > 0) {
+        await firestore.collection('orders').add({
+          'userId': user.uid,
+          'item': entry.key,
+          'quantity': entry.value,
+          'status': 'pending', // default on creation
+        });
       }
-
-      if (orders.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please select at least one item to order.')));
-        return;
-      }
-
-      // Get the current user
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('You need to be logged in to place an order')));
-        return;
-      }
-
-      // Store the order in Firestore
-      await FirebaseFirestore.instance.collection('orders').add({
-        'user_id': user.uid,
-        'business_id': widget.business['id'], // Assuming the business has an 'id' field
-        'items': orders,
-        'total': orders.fold(0, (sum, order) {
-          // Ensure quantity is treated as an integer for multiplication
-          int quantity = (order['quantity'] as num).toInt();
-          return sum + (quantity * 10);
-        }),
-        // You can calculate total dynamically
-        'status': 'pending',
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order placed successfully')));
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to place order: $e')));
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Order placed!')),
+    );
+
+    setState(() {
+      _quantities.clear(); // clear cart
+    });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -137,6 +183,7 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView(
+          padding: EdgeInsets.all(16),
           children: [
             Text(
               widget.business['name'] ?? 'No Name',
@@ -185,7 +232,7 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
             }).toList(),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => _placeOrder(context),  // Order confirmation button
+              onPressed: () => _placeOrder(),  // Order confirmation button
               child: Text('Place Order'),
             ),
           ],

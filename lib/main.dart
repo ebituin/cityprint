@@ -1,4 +1,5 @@
 import 'package:cityprint/BusinessPage.dart';
+import 'package:cityprint/BusinessSettingsPage.dart';
 import 'package:cityprint/HomePage.dart';
 import 'package:cityprint/LoginScreen.dart';
 import 'package:cityprint/RoleSelectionScreen.dart';
@@ -34,6 +35,7 @@ class MyApp extends StatelessWidget {
         '/roleselection': (context) => RoleSelectionScreen(),
         '/home': (context) => HomePage(),
         '/business': (context) => BusinessPage(),
+        '/BusinessSettings': (context) => BusinessSettingsPage(),
       },
       debugShowCheckedModeBanner: false,
     );
