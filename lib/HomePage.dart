@@ -2,8 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-
-
+// Home Page
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
@@ -37,15 +36,18 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Home Page'),
+        title: Text(
+          'CityPrint',
+          style: TextStyle(
+            color: Colors.white
+          ),
+          ),
+        backgroundColor: const Color(0xFFB388EB),
         actions: [
           IconButton(
             icon: Icon(Icons.shopping_cart),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => OrdersPage()),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (_) => OrdersPage()));
             },
           ),
         ],
@@ -54,13 +56,11 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(12.0),
             child: TextField(
               controller: _searchController,
               onChanged: (value) {
-                setState(() {
-                  _searchQuery = value.toLowerCase();
-                });
+                setState(() => _searchQuery = value.toLowerCase());
               },
               decoration: InputDecoration(
                 hintText: 'Search businesses or items...',
@@ -77,7 +77,7 @@ class _HomePageState extends State<HomePage> {
                       )
                     : null,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
@@ -104,20 +104,31 @@ class _HomePageState extends State<HomePage> {
                 }
 
                 return ListView.builder(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
                   itemCount: businesses.length,
                   itemBuilder: (context, index) {
                     var business = businesses[index].data() as Map<String, dynamic>;
-                    return ListTile(
-                      title: Text(business['name'] ?? 'No Name'),
-                      subtitle: Text(business['location'] ?? 'No Location'),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => BusinessDetailPage(business: business),
-                          ),
-                        );
-                      },
+                    return Card(
+                      elevation: 3,
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: const Color(0xFFB388EB),
+                          child: Icon(Icons.store, color: Colors.white),
+                        ),
+                        title: Text(business['name'] ?? 'No Name'),
+                        subtitle: Text(business['location'] ?? 'No Location'),
+                        trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => BusinessDetailPage(business: business),
+                            ),
+                          );
+                        },
+                      ),
                     );
                   },
                 );
@@ -130,7 +141,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-
+// Orders Page
 class OrdersPage extends StatelessWidget {
   const OrdersPage({super.key});
 
@@ -149,14 +160,27 @@ class OrdersPage extends StatelessWidget {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('My Orders'),
+          title: Text(
+            'My Orders',
+            style: TextStyle(
+            color: Colors.white
+          ),
+            ),
+          backgroundColor: const Color(0xFFB388EB),
           bottom: TabBar(
+            labelColor: Colors.white,             // Selected tab text color
+            unselectedLabelColor: Colors.white70,  // Unselected tab text color (slightly faded)
+            labelStyle: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
             tabs: [
               Tab(text: 'Pending'),
               Tab(text: 'Accepted'),
               Tab(text: 'Cancelled'),
             ],
           ),
+
         ),
         body: TabBarView(
           children: ['pending', 'accepted', 'cancelled'].map((status) {
@@ -173,12 +197,25 @@ class OrdersPage extends StatelessWidget {
                 if (orders.isEmpty) return Center(child: Text('No $status orders.'));
 
                 return ListView(
+                  padding: EdgeInsets.all(8),
                   children: orders.map((doc) {
                     final data = doc.data() as Map<String, dynamic>;
-                    return ListTile(
-                      title: Text(data['item']),
-                      subtitle: Text('Quantity: ${data['quantity']}'),
-                      trailing: Text(data['status']),
+                    return Card(
+                      child: ListTile(
+                        title: Text(data['item']),
+                        subtitle: Text('Quantity: ${data['quantity']}'),
+                        trailing: Chip(
+                          label: Text(
+                            data['status'].toString().toUpperCase(),
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          backgroundColor: status == 'pending'
+                              ? Colors.orange
+                              : status == 'accepted'
+                                  ? Colors.green
+                                  : Colors.red,
+                        ),
+                      ),
                     );
                   }).toList(),
                 );
@@ -191,7 +228,7 @@ class OrdersPage extends StatelessWidget {
   }
 }
 
-
+// Business Detail Page
 class BusinessDetailPage extends StatefulWidget {
   final Map<String, dynamic> business;
 
@@ -202,19 +239,17 @@ class BusinessDetailPage extends StatefulWidget {
 }
 
 class _BusinessDetailPageState extends State<BusinessDetailPage> {
-  final Map<String, int> _quantities = {}; // Track quantities for each item
+  final Map<String, int> _quantities = {};
 
   @override
   void initState() {
     super.initState();
-    // Initialize quantities for each item to 0 by default
     final items = widget.business['items'] ?? [];
     for (var item in items) {
-      _quantities[item] = 0;  // Set default quantity to 0
+      _quantities[item] = 0;
     }
   }
 
-  // Function to place an order with quantity
   Future<void> _placeOrder() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -227,20 +262,19 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
           'userId': user.uid,
           'item': entry.key,
           'quantity': entry.value,
-          'status': 'pending', // default on creation
+          'status': 'pending',
         });
       }
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Order placed!')),
+      SnackBar(content: Text('Order placed successfully!')),
     );
 
     setState(() {
-      _quantities.clear(); // clear cart
+      _quantities.clear();
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -248,16 +282,22 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.business['name'] ?? 'Business Details'),
+        title: Text(
+          widget.business['name'] ?? 'Business Details',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold
+          ),
+          ),
+        backgroundColor: const Color(0xFFB388EB),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView(
-          padding: EdgeInsets.all(16),
           children: [
             Text(
               widget.business['name'] ?? 'No Name',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
             Text(
@@ -265,45 +305,69 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 16),
-            Text(
-              'Location: ${widget.business['location'] ?? 'Unknown'}',
-              style: TextStyle(fontSize: 14),
+            Row(
+              children: [
+                Icon(Icons.location_on, size: 18, color: const Color(0xFFB388EB)),
+                SizedBox(width: 5),
+                Text(
+                  widget.business['location'] ?? 'Unknown Location',
+                  style: TextStyle(fontSize: 14),
+                ),
+              ],
             ),
             SizedBox(height: 20),
             Text('Available Items', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             ...items.map((item) {
-              return ListTile(
-                title: Row(
-                  children: [
-                    Expanded(child: Text(item.toString())),
-                    Text(' - '),
-                    IconButton(
-                      icon: Icon(Icons.remove),
-                      onPressed: () {
-                        setState(() {
-                          if (_quantities[item] != null && _quantities[item]! > 0) {
-                            _quantities[item] = _quantities[item]! - 1;
-                          }
-                        });
-                      },
+              return Card(
+                margin: EdgeInsets.symmetric(vertical: 6),
+                child: ListTile(
+                  title: Text(item.toString()),
+                  trailing: Container(
+                    width: 120,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.remove),
+                          onPressed: () {
+                            setState(() {
+                              if (_quantities[item] != null && _quantities[item]! > 0) {
+                                _quantities[item] = _quantities[item]! - 1;
+                              }
+                            });
+                          },
+                        ),
+                        Text('${_quantities[item]}'),
+                        IconButton(
+                          icon: Icon(Icons.add),
+                          onPressed: () {
+                            setState(() {
+                              _quantities[item] = (_quantities[item] ?? 0) + 1;
+                            });
+                          },
+                        ),
+                      ],
                     ),
-                    Text(_quantities[item].toString()),
-                    IconButton(
-                      icon: Icon(Icons.add),
-                      onPressed: () {
-                        setState(() {
-                          _quantities[item] = (_quantities[item] ?? 0) + 1;
-                        });
-                      },
-                    ),
-                  ],
+                  ),
                 ),
               );
             }).toList(),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => _placeOrder(),  // Order confirmation button
-              child: Text('Place Order'),
+            ElevatedButton.icon(
+              onPressed: _placeOrder,
+              icon: Icon(Icons.shopping_cart_checkout),
+              label: Text(
+                'Place Order',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold
+                ),
+                ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB388EB),
+                padding: EdgeInsets.symmetric(vertical: 14),
+                textStyle: TextStyle(fontSize: 16),
+              ),
             ),
           ],
         ),
@@ -312,7 +376,7 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
   }
 }
 
-
+// App Drawer
 class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -320,9 +384,14 @@ class AppDrawer extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          DrawerHeader(
-            decoration: BoxDecoration(color: Theme.of(context).primaryColor),
-            child: Text('Menu', style: TextStyle(color: Colors.white, fontSize: 24)),
+          UserAccountsDrawerHeader(
+            accountName: Text('CityPrint'),
+            accountEmail: Text('Welcome to CityPrint!'),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Icon(Icons.person, size: 42, color: Colors.deepPurple),
+            ),
+            decoration: BoxDecoration(color: Colors.deepPurple),
           ),
           ListTile(
             leading: Icon(Icons.logout),
