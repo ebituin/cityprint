@@ -173,7 +173,7 @@ class OrdersPage extends StatelessWidget {
             labelStyle: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-            ),
+            ),//s
             tabs: [
               Tab(text: 'Pending'),
               Tab(text: 'Accepted'),
