@@ -19,6 +19,20 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  bool _businessMatchesSearch(Map<String, dynamic> business) {
+    final name = (business['name'] ?? '').toString().toLowerCase();
+    final items = (business['items'] ?? []) as List<dynamic>;
+
+    if (name.contains(_searchQuery)) return true;
+
+    for (var item in items) {
+      if (item.toString().toLowerCase().contains(_searchQuery)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,7 +63,7 @@ class _HomePageState extends State<HomePage> {
                 });
               },
               decoration: InputDecoration(
-                hintText: 'Search businesses...',
+                hintText: 'Search businesses or items...',
                 prefixIcon: Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
@@ -81,9 +95,8 @@ class _HomePageState extends State<HomePage> {
                 }
 
                 final businesses = snapshot.data!.docs.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final name = data['name']?.toString().toLowerCase() ?? '';
-                  return name.contains(_searchQuery);
+                  final business = doc.data() as Map<String, dynamic>;
+                  return _businessMatchesSearch(business);
                 }).toList();
 
                 if (businesses.isEmpty) {
@@ -116,6 +129,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
 
 class OrdersPage extends StatelessWidget {
   const OrdersPage({super.key});
