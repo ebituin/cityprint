@@ -4,7 +4,21 @@ import 'package:flutter/material.dart';
 
 
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,40 +36,82 @@ class HomePage extends StatelessWidget {
           ),
         ],
       ),
-      
       drawer: AppDrawer(),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('businesses').snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.toLowerCase();
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Search businesses...',
+                prefixIcon: Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear),
+                        onPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                            _searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('businesses').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(child: Text('No businesses available yet.'));
-          }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(child: Text('No businesses available yet.'));
+                }
 
-          final businesses = snapshot.data!.docs;
+                final businesses = snapshot.data!.docs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final name = data['name']?.toString().toLowerCase() ?? '';
+                  return name.contains(_searchQuery);
+                }).toList();
 
-          return ListView.builder(
-            itemCount: businesses.length,
-            itemBuilder: (context, index) {
-              var business = businesses[index].data() as Map<String, dynamic>;
-              return ListTile(
-                title: Text(business['name'] ?? 'No Name'),
-                subtitle: Text(business['location'] ?? 'No Location'),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BusinessDetailPage(business: business),
-                    ),
-                  );
-                },
-              );
-            },
-          );
-        },
+                if (businesses.isEmpty) {
+                  return Center(child: Text('No businesses found.'));
+                }
+
+                return ListView.builder(
+                  itemCount: businesses.length,
+                  itemBuilder: (context, index) {
+                    var business = businesses[index].data() as Map<String, dynamic>;
+                    return ListTile(
+                      title: Text(business['name'] ?? 'No Name'),
+                      subtitle: Text(business['location'] ?? 'No Location'),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BusinessDetailPage(business: business),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
