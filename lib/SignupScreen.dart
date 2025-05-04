@@ -1,6 +1,6 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cityprint/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SignupScreen extends StatefulWidget {
   @override
@@ -15,72 +15,72 @@ class _SignupScreenState extends State<SignupScreen> {
   final _passwordController = TextEditingController();
   final _sellerBusinessController = TextEditingController();
   final _sellerOwnerController = TextEditingController();
+  final supabase = Supabase.instance.client;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    selectedRole = ModalRoute.of(context)?.settings.arguments as String? ?? 'user';
-  }
-
-  Future<void> saveUserToFirestore({
-    required String role,
-    required String name,
-    required String email,
-  }) async {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      throw Exception('User not logged in');
-    }
-
-    await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-      'uid': user.uid,
-      'name': name,
-      'email': email,
-      'role': role,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    selectedRole =
+        ModalRoute.of(context)?.settings.arguments as String? ?? 'user';
   }
 
   Future<void> _submit() async {
-    try {
-      final email = _emailController.text.trim();
-      final password = _passwordController.text.trim();
-      final name = selectedRole == 'user'
-          ? _userController.text.trim()
-          : _sellerOwnerController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final name =
+        selectedRole == 'user'
+            ? _userController.text.trim()
+            : _sellerOwnerController.text.trim();
+    final businessName = _sellerBusinessController.text.trim();
 
-      // Firebase Auth
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
+    if (email.isEmpty || password.isEmpty || name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please fill all required fields')),
       );
+      return;
+    }
 
-      // Save to Firestore
-      await saveUserToFirestore(
-        role: selectedRole,
+    try {
+      // Sign up the user
+      final res = await AuthService.signUp(email, password);
+      final user = res.user;
+
+      if (user == null) throw Exception('Signup failed');
+
+      // Insert user data into the database
+      await AuthService.insertUserData(
+        userId: user.id,
         name: name,
         email: email,
+        role: selectedRole,
+        businessName: selectedRole == 'seller' ? businessName : null,
       );
 
-      // Navigate based on role
-      if (selectedRole == 'user') {
-        Navigator.pushNamed(context, '/home');
-      } else {
-        Navigator.pushNamed(context, '/business');
-      }
+      // Notify user of success
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Signup successful!')));
+
+      // Navigate to the appropriate screen
+      Navigator.pushNamedAndRemoveUntil(context, selectedRole == 'user' ? '/home' : '/business', (Route<dynamic> route) => false);
+      
     } catch (e) {
-      print('Signup error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Signup failed: ${e.toString()}')),
-      );
+      // Log and show the error
+      print('Error: ${e.toString()}');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Sign Up as ${selectedRole[0].toUpperCase()}${selectedRole.substring(1)}')),
+      appBar: AppBar(
+        title: Text(
+          'Sign Up as ${selectedRole[0].toUpperCase()}${selectedRole.substring(1)}',
+        ),
+      ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
@@ -88,7 +88,7 @@ class _SignupScreenState extends State<SignupScreen> {
             if (selectedRole == 'user') ...[
               TextField(
                 controller: _userController,
-                decoration: InputDecoration(labelText: 'First Name'),
+                decoration: InputDecoration(labelText: 'Full Name'),
               ),
               TextField(
                 controller: _emailController,
@@ -119,16 +119,10 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
             ],
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _submit,
-              child: Text('Submit'),
-            ),
+            ElevatedButton(onPressed: _submit, child: Text('Submit')),
           ],
         ),
       ),
     );
   }
-}
-extension StringExtensions on String {
-  String capitalize() => this[0].toUpperCase() + substring(1);
 }

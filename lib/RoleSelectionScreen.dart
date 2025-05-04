@@ -29,19 +29,22 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildRoleCard('user', Icons.person, 'User'),
-                  _buildRoleCard('seller', Icons.store, 'Seller'),
+                  _buildRoleCard('user', Icons.person, 'user'),
+                  _buildRoleCard('seller', Icons.store, 'seller'),
                 ],
               ),
               Spacer(),
               ElevatedButton(
-                onPressed: selectedRole == null
-                    ? null
-                    : () {
-                        Navigator.pushNamed(context, '/signup',
-                            arguments: selectedRole);
-                      },
-                child: Text('Next Step', style: TextStyle(fontSize: 18)),
+                onPressed:
+                    selectedRole == null
+                        ? null
+                        : () {
+                          Navigator.pushReplacementNamed(
+                            context,
+                            '/signup',
+                            arguments: selectedRole,
+                          );
+                        },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
@@ -50,6 +53,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                child: Text('Next Step', style: TextStyle(fontSize: 18)),
               ),
             ],
           ),
@@ -87,8 +91,11 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon,
-                size: 50, color: isSelected ? Colors.blue[700] : Colors.grey),
+            Icon(
+              icon,
+              size: 50,
+              color: isSelected ? Colors.blue[700] : Colors.grey,
+            ),
             SizedBox(height: 10),
             Text(
               label,
