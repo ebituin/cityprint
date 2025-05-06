@@ -33,7 +33,25 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final dummyBusinesses = [//business lists
+    final dummyBusinesses = [
+      {
+        'name': 'QuickPrint Center',
+        'description': 'Fast and affordable document printing.',
+        'location': 'Downtown Plaza',
+        'items': ['Black & White Prints', 'Color Prints', 'Laminating'],
+      },
+      {
+        'name': 'TeeDesign Studio',
+        'description': 'Custom t-shirt and apparel printing.',
+        'location': '5th Avenue',
+        'items': ['T-Shirt Printing', 'Hoodie Printing', 'Logo Embroidery'],
+      },
+      {
+        'name': '3D Forge Lab',
+        'description': 'On-demand 3D printing services.',
+        'location': 'Innovation Park',
+        'items': ['3D Prototypes', 'Resin Prints', 'Model Printing'],
+      },
     ];
 
     final businesses =
@@ -68,18 +86,17 @@ class _HomePageState extends State<HomePage> {
               decoration: InputDecoration(
                 hintText: 'Search businesses or items...',
                 prefixIcon: Icon(Icons.search),
-                suffixIcon:
-                    _searchController.text.isNotEmpty
-                        ? IconButton(
-                          icon: Icon(Icons.clear),
-                          onPressed: () {
-                            setState(() {
-                              _searchController.clear();
-                              _searchQuery = '';
-                            });
-                          },
-                        )
-                        : null,
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear),
+                        onPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                            _searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -87,48 +104,40 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           Expanded(
-            child:
-                businesses.isEmpty
-                    ? Center(child: Text('No businesses found.'))
-                    : ListView.builder(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      itemCount: businesses.length,
-                      itemBuilder: (context, index) {
-                        var business = businesses[index];
-                        return Card(
-                          elevation: 3,
-                          margin: EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+            child: businesses.isEmpty
+                ? Center(child: Text('No businesses found.'))
+                : ListView.builder(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: businesses.length,
+                    itemBuilder: (context, index) {
+                      var business = businesses[index];
+                      return Card(
+                        elevation: 3,
+                        margin: EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: const Color(0xFFB388EB),
+                            child: Icon(Icons.store, color: Colors.white),
                           ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: const Color(0xFFB388EB),
-                              child: Icon(Icons.store, color: Colors.white),
-                            ),
-                            title: Text(
-                              business['name']?.toString() ?? 'No Name',
-                            ),
-                            subtitle: Text(
-                              business['location']?.toString() ?? 'No Location',
-                            ),
-
-                            trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (_) => BusinessDetailPage(
-                                        business: business,
-                                      ),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
+                          title: Text(business['name']?.toString() ?? 'No Name'),
+                          subtitle:
+                              Text(business['location']?.toString() ?? 'No Location'),
+                          trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => BusinessDetailPage(business: business),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -136,7 +145,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// Orders Page (no actual user or data logic now)
+// Orders Page
 class OrdersPage extends StatelessWidget {
   const OrdersPage({super.key});
 
@@ -171,12 +180,11 @@ class OrdersPage extends StatelessWidget {
   }
 }
 
-// Business Detail Page (no actual ordering, just dummy UI)
+// Business Detail Page
 class BusinessDetailPage extends StatefulWidget {
   final Map<String, dynamic> business;
 
-  const BusinessDetailPage({Key? key, required this.business})
-    : super(key: key);
+  const BusinessDetailPage({Key? key, required this.business}) : super(key: key);
 
   @override
   _BusinessDetailPageState createState() => _BusinessDetailPageState();
@@ -197,6 +205,8 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
   @override
   Widget build(BuildContext context) {
     final List<dynamic> items = widget.business['items'] ?? [];
+
+    bool isSeller = false;
 
     return Scaffold(
       appBar: AppBar(
@@ -222,11 +232,7 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
             SizedBox(height: 16),
             Row(
               children: [
-                Icon(
-                  Icons.location_on,
-                  size: 18,
-                  color: const Color(0xFFB388EB),
-                ),
+                Icon(Icons.location_on, size: 18, color: const Color(0xFFB388EB)),
                 SizedBox(width: 5),
                 Text(
                   widget.business['location'] ?? 'Unknown Location',
@@ -278,17 +284,13 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
             SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: () {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Order simulated.')));
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text('Order simulated.')));
               },
               icon: Icon(Icons.shopping_cart_checkout),
               label: Text(
                 'Place Order',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFB388EB),
@@ -303,7 +305,7 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
   }
 }
 
-// App Drawer (Log Out now just pops back)
+// App Drawer
 class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -321,9 +323,23 @@ class AppDrawer extends StatelessWidget {
             decoration: BoxDecoration(color: Colors.deepPurple),
           ),
           ListTile(
+            leading: Icon(Icons.store),
+            title: Text('Seller'),
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/business');
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.store),
+            title: Text('Seller'),
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/business');
+            },
+          ),
+          ListTile(
             leading: Icon(Icons.logout),
             title: Text('Log Out'),
-            onTap: () {//add logout for the auth
+            onTap: () {
               AuthService.signOut();
               Navigator.pushReplacementNamed(context, '/');
             },

@@ -1,3 +1,4 @@
+import 'package:cityprint/SignupScreen.dart';
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 
@@ -150,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   SizedBox(height: 20),
                   TextButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, '/roleselection');
+                      Navigator.pushNamed(context, '/signup' );
                     },
                     child: Text('Don’t have an account? Sign up'),
                   ),

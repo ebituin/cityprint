@@ -8,30 +8,15 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  late String selectedRole;
-
   final _userController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _sellerBusinessController = TextEditingController();
-  final _sellerOwnerController = TextEditingController();
   final supabase = Supabase.instance.client;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    selectedRole =
-        ModalRoute.of(context)?.settings.arguments as String? ?? 'user';
-  }
 
   Future<void> _submit() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
-    final name =
-        selectedRole == 'user'
-            ? _userController.text.trim()
-            : _sellerOwnerController.text.trim();
-    final businessName = _sellerBusinessController.text.trim();
+    final name = _userController.text.trim();
 
     if (email.isEmpty || password.isEmpty || name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -52,8 +37,6 @@ class _SignupScreenState extends State<SignupScreen> {
         userId: user.id,
         name: name,
         email: email,
-        role: selectedRole,
-        businessName: selectedRole == 'seller' ? businessName : null,
       );
 
       // Notify user of success
@@ -62,8 +45,11 @@ class _SignupScreenState extends State<SignupScreen> {
       ).showSnackBar(SnackBar(content: Text('Signup successful!')));
 
       // Navigate to the appropriate screen
-      Navigator.pushNamedAndRemoveUntil(context, selectedRole == 'user' ? '/home' : '/business', (Route<dynamic> route) => false);
-      
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/home',
+        (Route<dynamic> route) => false,
+      );
     } catch (e) {
       // Log and show the error
       print('Error: ${e.toString()}');
@@ -76,48 +62,24 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Sign Up as ${selectedRole[0].toUpperCase()}${selectedRole.substring(1)}',
-        ),
-      ),
+      appBar: AppBar(title: Text('Sign Up')),
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
           children: [
-            if (selectedRole == 'user') ...[
-              TextField(
-                controller: _userController,
-                decoration: InputDecoration(labelText: 'Full Name'),
-              ),
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(labelText: 'Email'),
-              ),
-              TextField(
-                controller: _passwordController,
-                decoration: InputDecoration(labelText: 'Password'),
-                obscureText: true,
-              ),
-            ] else ...[
-              TextField(
-                controller: _sellerBusinessController,
-                decoration: InputDecoration(labelText: 'Business Name'),
-              ),
-              TextField(
-                controller: _sellerOwnerController,
-                decoration: InputDecoration(labelText: 'Owner Name'),
-              ),
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(labelText: 'Email'),
-              ),
-              TextField(
-                controller: _passwordController,
-                decoration: InputDecoration(labelText: 'Password'),
-                obscureText: true,
-              ),
-            ],
+            TextField(
+              controller: _userController,
+              decoration: InputDecoration(labelText: 'Full Name'),
+            ),
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(labelText: 'Email'),
+            ),
+            TextField(
+              controller: _passwordController,
+              decoration: InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
             SizedBox(height: 20),
             ElevatedButton(onPressed: _submit, child: Text('Submit')),
           ],

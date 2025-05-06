@@ -32,27 +32,17 @@ class AuthService {
     required String userId,
     required String name,
     required String email,
-    required String role,
-    String? businessName,
   }) async {
     try {
-      await supabase.from('Users').upsert({
-        'id': userId,
+      await supabase.from('users').upsert({
+        'user_id': userId,
         'name': name,
         'email': email,
       });
+      await supabase.from('Customers').upsert({'user_id': userId});
 
-      if (role == 'seller') {
-        await supabase.from('Sellers').upsert({
-          'user_id': userId,
-          'business_name': businessName,
-        });
-      } else if (role == 'user') {
-        await supabase.from('Customers').upsert({'user_id': userId});
-      }
     } catch (e) {
       throw Exception('Failed to insert user data: ${e.toString()}');
     }
   }
 }
-

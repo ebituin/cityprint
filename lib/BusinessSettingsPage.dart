@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
+import 'user_service.dart';
 
 class BusinessSettingsPage extends StatefulWidget {
   @override
@@ -12,9 +13,21 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
   final _descController = TextEditingController();
   final _itemController = TextEditingController();
 
+  String? businessName;
+
   List<String> items = [];
   bool isEditing = false; // starts as false (view-only)
   bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    UserService.getBusinessName().then((name) {
+      setState(() {
+        businessName = name ?? 'No Business Name';
+      });
+    });
+  }
 
   void _toggleEdit() {
     setState(() {
@@ -68,6 +81,7 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
             icon: Icon(Icons.logout),
             onPressed: () async {
               await AuthService.signOut();
+
               Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
             },
           ),
@@ -79,6 +93,9 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
           key: _formKey,
           child: ListView(
             children: [
+              Container(
+                child: Column(children: [Text('Business Name'), Text('$businessName')]),
+              ),
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(labelText: 'Business Name'),

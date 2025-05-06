@@ -1,110 +1,90 @@
+import 'package:cityprint/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class RoleSelectionScreen extends StatefulWidget {
+class SignupBusinessScreen extends StatefulWidget {
   @override
-  _RoleSelectionScreenState createState() => _RoleSelectionScreenState();
+  State<SignupBusinessScreen> createState() => _SignupBusinessScreenState();
 }
 
-class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
-  String? selectedRole; // Track selected role
+class _SignupBusinessScreenState extends State<SignupBusinessScreen> {
+  final _userController = TextEditingController();
+
+  final _emailController = TextEditingController();
+
+  final _passwordController = TextEditingController();
+
+  final supabase = Supabase.instance.client;
+
+  Future<void> _submit() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final name = _userController.text.trim();
+
+    if (email.isEmpty || password.isEmpty || name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please fill all required fields')),
+      );
+      return;
+    }
+
+    try {
+      // Sign up the user
+      final res = await AuthService.signUp(email, password);
+      final user = res.user;
+
+      if (user == null) throw Exception('Signup failed');
+
+      // Insert user data into the database
+      await AuthService.insertUserData(
+        userId: user.id,
+        name: name,
+        email: email,
+      );
+
+      // Notify user of success
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Signup successful!')));
+
+      // Navigate to the appropriate screen
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/home',
+        (Route<dynamic> route) => false,
+      );
+    } catch (e) {
+      // Log and show the error
+      print('Error: ${e.toString()}');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue[50], // Light blue background
-      body: Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
-          child: Column(
-            children: [
-              Text(
-                'Select user role',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue[900],
-                ),
-              ),
-              SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildRoleCard('user', Icons.person, 'user'),
-                  _buildRoleCard('seller', Icons.store, 'seller'),
-                ],
-              ),
-              Spacer(),
-              ElevatedButton(
-                onPressed:
-                    selectedRole == null
-                        ? null
-                        : () {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            '/signup',
-                            arguments: selectedRole,
-                          );
-                        },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text('Next Step', style: TextStyle(fontSize: 18)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRoleCard(String role, IconData icon, String label) {
-    bool isSelected = selectedRole == role;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedRole = role;
-        });
-      },
-      child: Container(
-        width: 120,
-        height: 150,
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.blue[100] : Colors.white,
-          border: Border.all(
-            color: isSelected ? Colors.blue : Colors.grey[300]!,
-            width: 3,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.3),
-              blurRadius: 6,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
+      appBar: AppBar(title: Text('Sign Up')),
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 50,
-              color: isSelected ? Colors.blue[700] : Colors.grey,
+            TextField(
+              controller: _userController,
+              decoration: InputDecoration(labelText: 'Full Name'),
             ),
-            SizedBox(height: 10),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                color: isSelected ? Colors.blue[800] : Colors.black87,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(labelText: 'Email'),
             ),
+            TextField(
+              controller: _passwordController,
+              decoration: InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(onPressed: _submit, child: Text('Submit')),
           ],
         ),
       ),
