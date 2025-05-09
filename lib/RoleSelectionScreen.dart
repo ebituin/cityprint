@@ -1,91 +1,95 @@
-import 'package:cityprint/auth_service.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-class SignupBusinessScreen extends StatefulWidget {
-  @override
-  State<SignupBusinessScreen> createState() => _SignupBusinessScreenState();
-}
-
-class _SignupBusinessScreenState extends State<SignupBusinessScreen> {
-  final _userController = TextEditingController();
-
-  final _emailController = TextEditingController();
-
-  final _passwordController = TextEditingController();
-
-  final supabase = Supabase.instance.client;
-
-  Future<void> _submit() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    final name = _userController.text.trim();
-
-    if (email.isEmpty || password.isEmpty || name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill all required fields')),
-      );
-      return;
-    }
-
-    try {
-      // Sign up the user
-      final res = await AuthService.signUp(email, password);
-      final user = res.user;
-
-      if (user == null) throw Exception('Signup failed');
-
-      // Insert user data into the database
-      await AuthService.insertUserData(
-        userId: user.id,
-        name: name,
-        email: email,
-      );
-
-      // Notify user of success
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Signup successful!')));
-
-      // Navigate to the appropriate screen
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/home',
-        (Route<dynamic> route) => false,
-      );
-    } catch (e) {
-      // Log and show the error
-      print('Error: ${e.toString()}');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
-    }
-  }
+class RoleSelectionScreen extends StatelessWidget {
+  const RoleSelectionScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Sign Up')),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _userController,
-              decoration: InputDecoration(labelText: 'Full Name'),
-            ),
-            TextField(
-              controller: _emailController,
-              decoration: InputDecoration(labelText: 'Email'),
-            ),
-            TextField(
-              controller: _passwordController,
-              decoration: InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(onPressed: _submit, child: Text('Submit')),
-          ],
+      backgroundColor: Colors.blue[50],
+      appBar: AppBar(
+        title: const Text('Select Role'),
+        backgroundColor: const Color(0xFFB388EB),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Choose Your Role',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 40),
+              _buildRoleCard(
+                context,
+                'Customer',
+                'I want to order prints',
+                Icons.person_outline,
+                () => Navigator.pushNamed(context, '/signup'),
+              ),
+              const SizedBox(height: 20),
+              _buildRoleCard(
+                context,
+                'Business',
+                'I want to provide printing services',
+                Icons.store_outlined,
+                () => Navigator.pushNamed(context, '/signupBusiness'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleCard(
+    BuildContext context,
+    String title,
+    String subtitle,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 48,
+                color: const Color(0xFFB388EB),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

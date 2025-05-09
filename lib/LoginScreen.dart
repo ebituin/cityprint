@@ -1,7 +1,5 @@
-import 'package:cityprint/SignupScreen.dart';
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
-
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -27,18 +25,14 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // Use signInWithPassword correctly
-      final res = await AuthService.signIn(email, password);
-
-
-      // If login is successful, response.session and response.user will be non-null
-      final user = res.user;
-      if (user != null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Sign-in successful!')));
+      final response = await AuthService.signIn(email, password);
+      final user = response.user;
+       if (user != null) {
         Navigator.pushReplacementNamed(context, '/home');
-      }
+         ScaffoldMessenger.of(
+           context,
+         ).showSnackBar(SnackBar(content: Text('Sign-in successful!')));
+       }
     } catch (e) {
       ScaffoldMessenger.of(
         context,

@@ -40,7 +40,6 @@ class AuthService {
         'email': email,
       });
       await supabase.from('Customers').upsert({'user_id': userId});
-
     } catch (e) {
       throw Exception('Failed to insert user data: ${e.toString()}');
     }

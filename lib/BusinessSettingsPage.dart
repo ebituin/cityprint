@@ -1,8 +1,11 @@
+/*
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'user_service.dart';
 
 class BusinessSettingsPage extends StatefulWidget {
+  const BusinessSettingsPage({Key? key}) : super(key: key);
+
   @override
   _BusinessSettingsPageState createState() => _BusinessSettingsPageState();
 }
@@ -22,6 +25,23 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
   @override
   void initState() {
     super.initState();
+    _loadBusinessData();
+  }
+
+  Future<void> _loadBusinessData() async {
+    //User? user = null;
+    if (user != null) {
+      //final doc = await _firestore.collection('businesses').doc(user.uid).get();
+      /*
+      if (doc.exists) {
+        final data = doc.data()!;
+        _nameController.text = data['name'] ?? '';
+        _descController.text = data['description'] ?? '';
+        items = List<String>.from(data['items'] ?? []);
+      }
+      */
+    }
+    setState(() => isLoading = false);
     UserService.getBusinessName().then((name) {
       setState(() {
         businessName = name ?? 'No Business Name';
@@ -64,8 +84,10 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blue[50],
       appBar: AppBar(
-        title: Text('Business Settings'),
+        title: const Text('Business Settings'),
+        backgroundColor: const Color(0xFFB388EB),
         actions: [
           IconButton(
             icon: Icon(isEditing ? Icons.save : Icons.edit),
@@ -156,3 +178,5 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
     );
   }
 }
+
+*/

@@ -2,26 +2,30 @@ import 'package:cityprint/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class SignupScreen extends StatefulWidget {
-  const SignupScreen({Key? key}) : super(key: key);
+class SignupBusinessScreen extends StatefulWidget {
+  const SignupBusinessScreen({Key? key}) : super(key: key);
 
   @override
-  _SignupScreenState createState() => _SignupScreenState();
+  State<SignupBusinessScreen> createState() => _SignupBusinessScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
-  final _userController = TextEditingController();
+class _SignupBusinessScreenState extends State<SignupBusinessScreen> {
+  final _businessNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _userController.dispose();
+    _businessNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _addressController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -32,7 +36,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
-    final name = _userController.text.trim();
+    final businessName = _businessNameController.text.trim();
+    final address = _addressController.text.trim();
+    final phone = _phoneController.text.trim();
 
     try {
       final res = await AuthService.signUp(email, password);
@@ -40,16 +46,22 @@ class _SignupScreenState extends State<SignupScreen> {
 
       if (user == null) throw Exception('Signup failed');
 
-      await AuthService.insertUserData(
-        userId: user.id,
-        name: name,
-        email: email,
-      );
+      // Insert business data into the database
+      await Supabase.instance.client.from('businesses').insert({
+        'user_id': user.id,
+        'name': businessName,
+        'email': email,
+        'address': address,
+        'phone': phone,
+        'status': 'pending', // New businesses start as pending
+      });
 
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Signup successful!')),
+        const SnackBar(
+          content: Text('Business registration successful! Please wait for approval.'),
+        ),
       );
 
       Navigator.pushNamedAndRemoveUntil(
@@ -59,7 +71,7 @@ class _SignupScreenState extends State<SignupScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,
@@ -78,7 +90,7 @@ class _SignupScreenState extends State<SignupScreen> {
     return Scaffold(
       backgroundColor: Colors.blue[50],
       appBar: AppBar(
-        title: const Text('Sign Up'),
+        title: const Text('Business Sign Up'),
         backgroundColor: const Color(0xFFB388EB),
       ),
       body: SingleChildScrollView(
@@ -90,22 +102,22 @@ class _SignupScreenState extends State<SignupScreen> {
             children: [
               const SizedBox(height: 20),
               TextFormField(
-                controller: _userController,
+                controller: _businessNameController,
                 decoration: InputDecoration(
-                  labelText: 'Full Name',
+                  labelText: 'Business Name',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  prefixIcon: const Icon(Icons.person_outline),
+                  prefixIcon: const Icon(Icons.business_outlined),
                 ),
                 validator: (value) =>
-                    value?.isEmpty ?? true ? 'Please enter your name' : null,
+                    value?.isEmpty ?? true ? 'Please enter business name' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _emailController,
                 decoration: InputDecoration(
-                  labelText: 'Email',
+                  labelText: 'Business Email',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -114,7 +126,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value?.isEmpty ?? true) {
-                    return 'Please enter your email';
+                    return 'Please enter business email';
                   }
                   if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                       .hasMatch(value!)) {
@@ -156,6 +168,33 @@ class _SignupScreenState extends State<SignupScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _addressController,
+                decoration: InputDecoration(
+                  labelText: 'Business Address',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.location_on_outlined),
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Please enter business address' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _phoneController,
+                decoration: InputDecoration(
+                  labelText: 'Business Phone',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.phone_outlined),
+                ),
+                keyboardType: TextInputType.phone,
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Please enter business phone' : null,
+              ),
               const SizedBox(height: 24),
               _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -169,7 +208,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                       ),
                       child: const Text(
-                        'Sign Up',
+                        'Register Business',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white,
@@ -189,4 +228,4 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
     );
   }
-}
+} 

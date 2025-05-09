@@ -1,5 +1,50 @@
 import 'package:cityprint/auth_service.dart';
 import 'package:flutter/material.dart';
+ 
+// App Drawer
+class AppDrawer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          UserAccountsDrawerHeader(
+            accountName: Text('CityPrint'),
+            accountEmail: Text('Welcome to CityPrint!'),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Icon(Icons.person, size: 42, color: Colors.deepPurple),
+            ),
+            decoration: BoxDecoration(color: Colors.deepPurple),
+          ),
+          ListTile(
+            leading: Icon(Icons.store),
+            title: Text('Seller'),
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/business');
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.store),
+            title: Text('Seller'),
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/business');
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.logout),
+            title: Text('Log Out'),
+            onTap: () {
+              AuthService.signOut();
+              Navigator.pushReplacementNamed(context, '/');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 // Home Page
 class HomePage extends StatefulWidget {
@@ -300,51 +345,6 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// App Drawer
-class AppDrawer extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          UserAccountsDrawerHeader(
-            accountName: Text('CityPrint'),
-            accountEmail: Text('Welcome to CityPrint!'),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, size: 42, color: Colors.deepPurple),
-            ),
-            decoration: BoxDecoration(color: Colors.deepPurple),
-          ),
-          ListTile(
-            leading: Icon(Icons.store),
-            title: Text('Seller'),
-            onTap: () {
-              Navigator.pushReplacementNamed(context, '/business');
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.store),
-            title: Text('Seller'),
-            onTap: () {
-              Navigator.pushReplacementNamed(context, '/business');
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.logout),
-            title: Text('Log Out'),
-            onTap: () {
-              AuthService.signOut();
-              Navigator.pushReplacementNamed(context, '/');
-            },
-          ),
-        ],
       ),
     );
   }
