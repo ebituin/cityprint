@@ -8,6 +8,7 @@ import 'package:cityprint/SignupScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
@@ -25,8 +26,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'CityPrint',
+      title: 'CityPrint',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.blue[50],
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFFB388EB),
+          elevation: 0,
+        ),
         scaffoldBackgroundColor: Colors.blue[50],
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFFB388EB),
