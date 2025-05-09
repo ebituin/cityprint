@@ -13,63 +13,81 @@ class _SignupBusinessScreenState extends State<SignupBusinessScreen> {
   final _businessNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final _itemNameController = TextEditingController();
+  final _itemPriceController = TextEditingController();
+  final _itemDescriptionController = TextEditingController();
+  final _DescriptionController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
-  bool _obscurePassword = true;
 
   @override
   void dispose() {
     _businessNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _addressController.dispose();
-    _phoneController.dispose();
+    _itemNameController.dispose();
+    _itemPriceController.dispose();
+    _itemDescriptionController.dispose();
     super.dispose();
   }
+
+  
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
     final businessName = _businessNameController.text.trim();
-    final address = _addressController.text.trim();
-    final phone = _phoneController.text.trim();
+    final itemName = _itemNameController.text.trim();
+    final itemPrice = _itemPriceController.text.trim();
+    final itemDescription = _itemDescriptionController.text.trim();
 
     try {
-      final res = await AuthService.signUp(email, password);
-      final user = res.user;
+      // Get current user
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) throw Exception('No user logged in');
 
-      if (user == null) throw Exception('Signup failed');
+      // Check if user already has a store
+      
 
       // Insert business data into the database
-      await Supabase.instance.client.from('businesses').insert({
-        'user_id': user.id,
-        'name': businessName,
-        'email': email,
-        'address': address,
-        'phone': phone,
-        'status': 'pending', // New businesses start as pending
+      final businessResponse =
+          await Supabase.instance.client.from('business').insert({
+            'business_id': user.id,
+            'name': businessName,
+            'user_id': user.id,
+            'description': _DescriptionController.text.trim(),
+          }).select();
+
+      if (businessResponse == null || businessResponse.isEmpty) {
+        throw Exception('Failed to create business profile');
+      }
+
+      final businessId = businessResponse[0]['business_id'];
+
+      // Insert item data directly linked to business
+      await Supabase.instance.client.from('item').insert({
+        'item_id': user.id,
+        'name': itemName,
+        'price': double.parse(itemPrice),
+        'business_id': businessId,
+        'description': itemDescription,
       });
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Business registration successful! Please wait for approval.'),
-        ),
+        const SnackBar(content: Text('Business registration successful!')),
       );
 
       Navigator.pushNamedAndRemoveUntil(
         context,
-        '/home',
+        '/business',
         (Route<dynamic> route) => false,
       );
     } catch (e) {
+      print(e);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -94,138 +112,290 @@ class _SignupBusinessScreenState extends State<SignupBusinessScreen> {
         backgroundColor: const Color(0xFFB388EB),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _businessNameController,
-                decoration: InputDecoration(
-                  labelText: 'Business Name',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  prefixIcon: const Icon(Icons.business_outlined),
-                ),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Please enter business name' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: 'Business Email',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  prefixIcon: const Icon(Icons.email_outlined),
-                ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value?.isEmpty ?? true) {
-                    return 'Please enter business email';
-                  }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                      .hasMatch(value!)) {
-                    return 'Please enter a valid email';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
-                ),
-                obscureText: _obscurePassword,
-                validator: (value) {
-                  if (value?.isEmpty ?? true) {
-                    return 'Please enter your password';
-                  }
-                  if (value!.length < 6) {
-                    return 'Password must be at least 6 characters';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _addressController,
-                decoration: InputDecoration(
-                  labelText: 'Business Address',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  prefixIcon: const Icon(Icons.location_on_outlined),
-                ),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Please enter business address' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _phoneController,
-                decoration: InputDecoration(
-                  labelText: 'Business Phone',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                ),
-                keyboardType: TextInputType.phone,
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Please enter business phone' : null,
-              ),
-              const SizedBox(height: 24),
-              _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ElevatedButton(
-                      onPressed: _submit,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: const Color(0xFFB388EB),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  color: Colors.white,
+                  width: 320,
+                  height: 55,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.store_outlined, size: 40),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Store Name',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(
+                              height: 30,
+                              child: TextFormField(
+                                controller: _businessNameController,
+                                cursorColor: Colors.grey,
+                                decoration: InputDecoration(
+                                  hintText: 'Input Store Name',
+                                  hintStyle: TextStyle(fontSize: 12),
+                                  isDense: true,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                ),
+                                validator:
+                                    (value) =>
+                                        value?.isEmpty ?? true
+                                            ? 'Please enter store name'
+                                            : null,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: const Text(
-                        'Register Business',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10),
+                Container(
+                  color: Colors.white,
+                  width: 320,
+                  height: 125,
+                  padding: EdgeInsets.all(5),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.description_outlined, size: 40),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Description',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(
+                              height: 90,
+                              child: TextFormField(
+                                controller: _DescriptionController,
+                                maxLines: 4,
+                                maxLength: 50,
+                                cursorColor: Colors.grey,
+                                decoration: InputDecoration(
+                                  hintText: 'Input Description',
+                                  hintStyle: TextStyle(fontSize: 12),
+                                  isDense: true,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                ),
+                                validator:
+                                    (value) =>
+                                        value?.isEmpty ?? true
+                                            ? 'Please enter description'
+                                            : null,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      color: Colors.white,
+                      width: 205,
+                      height: 55,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.store_outlined, size: 40),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Item Name',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 30,
+                                  child: TextFormField(
+                                    controller: _itemNameController,
+                                    cursorColor: Colors.grey,
+                                    decoration: InputDecoration(
+                                      hintText: 'Input Item Name',
+                                      hintStyle: TextStyle(fontSize: 12),
+                                      isDense: true,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                    ),
+                                    validator:
+                                        (value) =>
+                                            value?.isEmpty ?? true
+                                                ? 'Please enter item name'
+                                                : null,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text('Already have an account? Log in'),
-              ),
-            ],
+                    SizedBox(width: 10),
+                    Container(
+                      color: Colors.white,
+                      width: 105,
+                      height: 55,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Price',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 30,
+                                  width: 50,
+                                  child: TextFormField(
+                                    controller: _itemPriceController,
+                                    cursorColor: Colors.grey,
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      hintText: 'Input Item Price',
+                                      hintStyle: TextStyle(fontSize: 12),
+                                      isDense: true,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                    ),
+                                    validator: (value) {
+                                      if (value?.isEmpty ?? true)
+                                        return 'Please enter price';
+                                      if (double.tryParse(value!) == null)
+                                        return 'Please enter a valid number';
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10),
+                Container(
+                  color: Colors.white,
+                  width: 320,
+                  height: 125,
+                  padding: EdgeInsets.all(5),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.description_outlined, size: 40),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Item Description',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(
+                              height: 90,
+                              child: TextFormField(
+                                controller: _itemDescriptionController,
+                                maxLines: 4,
+                                maxLength: 50,
+                                cursorColor: Colors.grey,
+                                decoration: InputDecoration(
+                                  hintText: 'Input Item Description',
+                                  hintStyle: TextStyle(fontSize: 12),
+                                  isDense: true,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                ),
+                                validator:
+                                    (value) =>
+                                        value?.isEmpty ?? true
+                                            ? 'Please enter item description'
+                                            : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 50),
+                SizedBox(
+                  height: 40,
+                  width: 320,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _submit,
+                    child:
+                        _isLoading
+                            ? CircularProgressIndicator(color: Colors.white)
+                            : Text(
+                              'Create Store',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                              ),
+                            ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFB388EB),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-} 
+}

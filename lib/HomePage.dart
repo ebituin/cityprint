@@ -1,44 +1,127 @@
 import 'package:cityprint/auth_service.dart';
 import 'package:flutter/material.dart';
- 
+import 'package:flutter/services.dart';
+import 'package:supabase/supabase.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cityprint/BusinessDetailPage.dart';
+
 // App Drawer
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
+  @override
+  _AppDrawerState createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  bool hasStore = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfUserHasStore();
+  }
+
+  Future<void> _checkIfUserHasStore() async {
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId != null) {
+        final response =
+            await Supabase.instance.client
+                .from('business')
+                .select()
+                .eq('user_id', userId)
+                .maybeSingle();
+        setState(() {
+          hasStore = response != null;
+        });
+      }
+    } catch (e) {
+      print('Error checking store: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
+      backgroundColor: const Color(0xFFD9D9D9),
+      child: Column(
         children: [
-          UserAccountsDrawerHeader(
-            accountName: Text('CityPrint'),
-            accountEmail: Text('Welcome to CityPrint!'),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, size: 42, color: Colors.deepPurple),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                UserAccountsDrawerHeader(
+                  accountName: Text('CityPrint'),
+                  accountEmail: Text('Welcome to CityPrint!'),
+                  currentAccountPicture: CircleAvatar(
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.person,
+                      size: 42,
+                      color: Colors.deepPurple,
+                    ),
+                  ),
+                  decoration: BoxDecoration(color: Colors.deepPurple),
+                ),
+                ListTile(
+                  leading: Icon(Icons.person_2_outlined, size: 24),
+                  title: Text('Account', style: TextStyle(fontSize: 20)),
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/business');
+                  },
+                ),
+                hasStore
+                    ? ListTile(
+                      leading: Icon(Icons.shopping_bag_outlined, size: 24),
+                      title: Text('Store', style: TextStyle(fontSize: 20)),
+                      onTap: () {
+                        Navigator.pushReplacementNamed(context, '/business');
+                      },
+                    )
+                    : ListTile(
+                      leading: Icon(Icons.shopping_bag_outlined, size: 24),
+                      title: Text(
+                        'Create Store',
+                        style: TextStyle(fontSize: 20),
+                      ),
+                      onTap: () {
+                        Navigator.pushReplacementNamed(
+                          context,
+                          '/signupbusiness',
+                        );
+                      },
+                    ),
+                ListTile(
+                  leading: Icon(Icons.settings_outlined, size: 24),
+                  title: Text('Settings', style: TextStyle(fontSize: 20)),
+                  onTap: () {
+                    Navigator.pushReplacementNamed(context, '/business');
+                  },
+                ),
+              ],
             ),
-            decoration: BoxDecoration(color: Colors.deepPurple),
           ),
-          ListTile(
-            leading: Icon(Icons.store),
-            title: Text('Seller'),
-            onTap: () {
-              Navigator.pushReplacementNamed(context, '/business');
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.store),
-            title: Text('Seller'),
-            onTap: () {
-              Navigator.pushReplacementNamed(context, '/business');
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.logout),
-            title: Text('Log Out'),
-            onTap: () {
-              AuthService.signOut();
-              Navigator.pushReplacementNamed(context, '/');
-            },
+          Container(
+            color: Colors.deepPurple,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pushReplacementNamed(context, '/');
+                  AuthService.signOut();
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.exit_to_app, size: 40, color: Colors.white),
+                    SizedBox(width: 10),
+                    Text(
+                      'Exit App',
+                      style: TextStyle(fontSize: 20, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -55,6 +138,31 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  List<Map<String, dynamic>> _businesses = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBusinesses();
+  }
+
+  Future<void> _loadBusinesses() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('business')
+          .select('*, item(*)')
+          .order('name');
+
+      setState(() {
+        _businesses = List<Map<String, dynamic>>.from(response);
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading businesses: $e');
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -64,12 +172,12 @@ class _HomePageState extends State<HomePage> {
 
   bool _businessMatchesSearch(Map<String, dynamic> business) {
     final name = (business['name'] ?? '').toString().toLowerCase();
-    final items = (business['items'] ?? []) as List<dynamic>;
+    final items = (business['item'] ?? []) as List<dynamic>;
 
     if (name.contains(_searchQuery)) return true;
 
     for (var item in items) {
-      if (item.toString().toLowerCase().contains(_searchQuery)) {
+      if (item['name'].toString().toLowerCase().contains(_searchQuery)) {
         return true;
       }
     }
@@ -78,29 +186,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final dummyBusinesses = [
-      {
-        'name': 'QuickPrint Center',
-        'description': 'Fast and affordable document printing.',
-        'location': 'Downtown Plaza',
-        'items': ['Black & White Prints', 'Color Prints', 'Laminating'],
-      },
-      {
-        'name': 'TeeDesign Studio',
-        'description': 'Custom t-shirt and apparel printing.',
-        'location': '5th Avenue',
-        'items': ['T-Shirt Printing', 'Hoodie Printing', 'Logo Embroidery'],
-      },
-      {
-        'name': '3D Forge Lab',
-        'description': 'On-demand 3D printing services.',
-        'location': 'Innovation Park',
-        'items': ['3D Prototypes', 'Resin Prints', 'Model Printing'],
-      },
-    ];
-
-    final businesses =
-        dummyBusinesses.where((b) => _businessMatchesSearch(b)).toList();
+    final filteredBusinesses =
+        _businesses.where((b) => _businessMatchesSearch(b)).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -131,17 +218,18 @@ class _HomePageState extends State<HomePage> {
               decoration: InputDecoration(
                 hintText: 'Search businesses or items...',
                 prefixIcon: Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() {
-                            _searchController.clear();
-                            _searchQuery = '';
-                          });
-                        },
-                      )
-                    : null,
+                suffixIcon:
+                    _searchController.text.isNotEmpty
+                        ? IconButton(
+                          icon: Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() {
+                              _searchController.clear();
+                              _searchQuery = '';
+                            });
+                          },
+                        )
+                        : null,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -149,40 +237,50 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           Expanded(
-            child: businesses.isEmpty
-                ? Center(child: Text('No businesses found.'))
-                : ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: businesses.length,
-                    itemBuilder: (context, index) {
-                      var business = businesses[index];
-                      return Card(
-                        elevation: 3,
-                        margin: EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: const Color(0xFFB388EB),
-                            child: Icon(Icons.store, color: Colors.white),
+            child:
+                _isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : filteredBusinesses.isEmpty
+                    ? Center(child: Text('No businesses found.'))
+                    : ListView.builder(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      itemCount: filteredBusinesses.length,
+                      itemBuilder: (context, index) {
+                        var business = filteredBusinesses[index];
+                        return Card(
+                          elevation: 3,
+                          margin: EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          title: Text(business['name']?.toString() ?? 'No Name'),
-                          subtitle:
-                              Text(business['location']?.toString() ?? 'No Location'),
-                          trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => BusinessDetailPage(business: business),
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: const Color(0xFFB388EB),
+                              child: Icon(Icons.store, color: Colors.white),
+                            ),
+                            title: Text(
+                              business['name']?.toString() ?? 'No Name',
+                            ),
+                            subtitle: Text(
+                              business['description']?.toString() ??
+                                  'No Description',
+                            ),
+                            trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => BusinessDetailPage(
+                                        business: business,
+                                      ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
           ),
         ],
       ),
@@ -229,7 +327,8 @@ class OrdersPage extends StatelessWidget {
 class BusinessDetailPage extends StatefulWidget {
   final Map<String, dynamic> business;
 
-  const BusinessDetailPage({Key? key, required this.business}) : super(key: key);
+  const BusinessDetailPage({Key? key, required this.business})
+    : super(key: key);
 
   @override
   _BusinessDetailPageState createState() => _BusinessDetailPageState();
@@ -241,15 +340,15 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
   @override
   void initState() {
     super.initState();
-    final items = widget.business['items'] ?? [];
+    final items = widget.business['item'] ?? [];
     for (var item in items) {
-      _quantities[item] = 0;
+      _quantities[item['name']] = 0;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<dynamic> items = widget.business['items'] ?? [];
+    final List<dynamic> items = widget.business['item'] ?? [];
 
     bool isSeller = false;
 
@@ -277,7 +376,11 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
             SizedBox(height: 16),
             Row(
               children: [
-                Icon(Icons.location_on, size: 18, color: const Color(0xFFB388EB)),
+                Icon(
+                  Icons.location_on,
+                  size: 18,
+                  color: const Color(0xFFB388EB),
+                ),
                 SizedBox(width: 5),
                 Text(
                   widget.business['location'] ?? 'Unknown Location',
@@ -294,7 +397,7 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
               return Card(
                 margin: EdgeInsets.symmetric(vertical: 6),
                 child: ListTile(
-                  title: Text(item.toString()),
+                  title: Text(item['name']),
                   trailing: Container(
                     width: 120,
                     child: Row(
@@ -304,19 +407,21 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
                           icon: Icon(Icons.remove),
                           onPressed: () {
                             setState(() {
-                              if (_quantities[item] != null &&
-                                  _quantities[item]! > 0) {
-                                _quantities[item] = _quantities[item]! - 1;
+                              if (_quantities[item['name']] != null &&
+                                  _quantities[item['name']]! > 0) {
+                                _quantities[item['name']] =
+                                    _quantities[item['name']]! - 1;
                               }
                             });
                           },
                         ),
-                        Text('${_quantities[item]}'),
+                        Text('${_quantities[item['name']]}'),
                         IconButton(
                           icon: Icon(Icons.add),
                           onPressed: () {
                             setState(() {
-                              _quantities[item] = (_quantities[item] ?? 0) + 1;
+                              _quantities[item['name']] =
+                                  (_quantities[item['name']] ?? 0) + 1;
                             });
                           },
                         ),
@@ -329,13 +434,17 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
             SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: () {
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text('Order simulated.')));
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Order simulated.')));
               },
               icon: Icon(Icons.shopping_cart_checkout),
               label: Text(
                 'Place Order',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFB388EB),

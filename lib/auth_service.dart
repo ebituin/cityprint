@@ -34,13 +34,22 @@ class AuthService {
     required String email,
   }) async {
     try {
-      await supabase.from('users').upsert({
+      print('Attempting to insert user data for userId: $userId');
+
+      // Insert into users table
+      final usersResponse = await supabase.from('users').upsert({
         'user_id': userId,
         'name': name,
         'email': email,
       });
-      await supabase.from('Customers').upsert({'user_id': userId});
+      print('Users table upsert response: $usersResponse');
     } catch (e) {
+      print('Error in insertUserData: $e');
+      // Check if the error is due to duplicate data
+      if (e.toString().contains('duplicate key')) {
+        print('Data already exists in the database');
+        return; // Silently return if data already exists
+      }
       throw Exception('Failed to insert user data: ${e.toString()}');
     }
   }
