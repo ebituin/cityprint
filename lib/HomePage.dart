@@ -1,5 +1,51 @@
+import 'package:cityprint/auth_service.dart';
 import 'package:flutter/material.dart';
  
+// App Drawer
+class AppDrawer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          UserAccountsDrawerHeader(
+            accountName: Text('CityPrint'),
+            accountEmail: Text('Welcome to CityPrint!'),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Icon(Icons.person, size: 42, color: Colors.deepPurple),
+            ),
+            decoration: BoxDecoration(color: Colors.deepPurple),
+          ),
+          ListTile(
+            leading: Icon(Icons.store),
+            title: Text('Seller'),
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/business');
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.store),
+            title: Text('Seller'),
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/business');
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.logout),
+            title: Text('Log Out'),
+            onTap: () {
+              AuthService.signOut();
+              Navigator.pushReplacementNamed(context, '/');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // Home Page
 class HomePage extends StatefulWidget {
   @override
@@ -32,20 +78,42 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final dummyBusinesses = [
+      {
+        'name': 'QuickPrint Center',
+        'description': 'Fast and affordable document printing.',
+        'location': 'Downtown Plaza',
+        'items': ['Black & White Prints', 'Color Prints', 'Laminating'],
+      },
+      {
+        'name': 'TeeDesign Studio',
+        'description': 'Custom t-shirt and apparel printing.',
+        'location': '5th Avenue',
+        'items': ['T-Shirt Printing', 'Hoodie Printing', 'Logo Embroidery'],
+      },
+      {
+        'name': '3D Forge Lab',
+        'description': 'On-demand 3D printing services.',
+        'location': 'Innovation Park',
+        'items': ['3D Prototypes', 'Resin Prints', 'Model Printing'],
+      },
+    ];
+
+    final businesses =
+        dummyBusinesses.where((b) => _businessMatchesSearch(b)).toList();
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'CityPrint',
-          style: TextStyle(
-            color: Colors.white
-          ),
-          ),
+        title: Text('CityPrint', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFFB388EB),
         actions: [
           IconButton(
             icon: Icon(Icons.shopping_cart),
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => OrdersPage()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => OrdersPage()),
+              );
             },
           ),
         ],
@@ -79,59 +147,43 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-          ),/*
+          ),
           Expanded(
-            child: StreamBuilder<>(
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(child: Text('No businesses available yet.'));
-                }
-
-                final businesses = snapshot.data!.docs.where((doc) {
-                  final business = doc.data() as Map<String, dynamic>;
-                  return _businessMatchesSearch(business);
-                }).toList();
-
-                if (businesses.isEmpty) {
-                  return Center(child: Text('No businesses found.'));
-                }
-
-                return ListView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: businesses.length,
-                  itemBuilder: (context, index) {
-                    var business = businesses[index].data() as Map<String, dynamic>;
-                    return Card(
-                      elevation: 3,
-                      margin: EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: const Color(0xFFB388EB),
-                          child: Icon(Icons.store, color: Colors.white),
+            child: businesses.isEmpty
+                ? Center(child: Text('No businesses found.'))
+                : ListView.builder(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: businesses.length,
+                    itemBuilder: (context, index) {
+                      var business = businesses[index];
+                      return Card(
+                        elevation: 3,
+                        margin: EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        title: Text(business['name'] ?? 'No Name'),
-                        subtitle: Text(business['location'] ?? 'No Location'),
-                        trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => BusinessDetailPage(business: business),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),*/
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: const Color(0xFFB388EB),
+                            child: Icon(Icons.store, color: Colors.white),
+                          ),
+                          title: Text(business['name']?.toString() ?? 'No Name'),
+                          subtitle:
+                              Text(business['location']?.toString() ?? 'No Location'),
+                          trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => BusinessDetailPage(business: business),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
         ],
       ),
     );
@@ -144,82 +196,30 @@ class OrdersPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = null; //
-
-    if (user == null) {
-      return Scaffold(
-        appBar: AppBar(title: Text('Orders')),
-        body: Center(child: Text('You must be logged in to view orders.')),
-      );
-    }
-
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
-            'My Orders',
-            style: TextStyle(
-            color: Colors.white
-          ),
-            ),
+          title: Text('My Orders', style: TextStyle(color: Colors.white)),
           backgroundColor: const Color(0xFFB388EB),
           bottom: TabBar(
-            labelColor: Colors.white,             // Selected tab text color
-            unselectedLabelColor: Colors.white70,  // Unselected tab text color (slightly faded)
-            labelStyle: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),//s
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             tabs: [
               Tab(text: 'Pending'),
               Tab(text: 'Accepted'),
               Tab(text: 'Cancelled'),
             ],
           ),
-
-        ),/*
+        ),
         body: TabBarView(
-          children: ['pending', 'accepted', 'cancelled'].map((status) {
-            return StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('orders')
-                  .where('userId', isEqualTo: user.uid)
-                  .where('status', isEqualTo: status)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
-
-                final orders = snapshot.data!.docs;
-                if (orders.isEmpty) return Center(child: Text('No $status orders.'));
-
-                return ListView(
-                  padding: EdgeInsets.all(8),
-                  children: orders.map((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    return Card(
-                      child: ListTile(
-                        title: Text(data['item']),
-                        subtitle: Text('Quantity: ${data['quantity']}'),
-                        trailing: Chip(
-                          label: Text(
-                            data['status'].toString().toUpperCase(),
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          backgroundColor: status == 'pending'
-                              ? Colors.orange
-                              : status == 'accepted'
-                                  ? Colors.green
-                                  : Colors.red,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
-            );
-          }).toList(),
-        ),*/
+          children: [
+            Center(child: Text('No pending orders.')),
+            Center(child: Text('No accepted orders.')),
+            Center(child: Text('No cancelled orders.')),
+          ],
+        ),
       ),
     );
   }
@@ -247,44 +247,18 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
     }
   }
 
-  Future<void> _placeOrder() async {
-    final user = null;
-    if (user == null) return;
-
-/*
-    for (var entry in _quantities.entries) {
-      if (entry.value > 0) {
-        await firestore.collection('orders').add({
-          'userId': user.uid,
-          'item': entry.key,
-          'quantity': entry.value,
-          'status': 'pending',
-        });
-      }
-    }*/
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Order placed successfully!')),
-    );
-
-    setState(() {
-      _quantities.clear();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final List<dynamic> items = widget.business['items'] ?? [];
+
+    bool isSeller = false;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
           widget.business['name'] ?? 'Business Details',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold
-          ),
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: const Color(0xFFB388EB),
       ),
       body: Padding(
@@ -312,7 +286,10 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
               ],
             ),
             SizedBox(height: 20),
-            Text('Available Items', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            Text(
+              'Available Items',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
             ...items.map((item) {
               return Card(
                 margin: EdgeInsets.symmetric(vertical: 6),
@@ -327,7 +304,8 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
                           icon: Icon(Icons.remove),
                           onPressed: () {
                             setState(() {
-                              if (_quantities[item] != null && _quantities[item]! > 0) {
+                              if (_quantities[item] != null &&
+                                  _quantities[item]! > 0) {
                                 _quantities[item] = _quantities[item]! - 1;
                               }
                             });
@@ -350,15 +328,15 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
             }).toList(),
             SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: _placeOrder,
+              onPressed: () {
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text('Order simulated.')));
+              },
               icon: Icon(Icons.shopping_cart_checkout),
               label: Text(
                 'Place Order',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold
-                ),
-                ),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFB388EB),
                 padding: EdgeInsets.symmetric(vertical: 14),
@@ -367,37 +345,6 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// App Drawer
-class AppDrawer extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          UserAccountsDrawerHeader(
-            accountName: Text('CityPrint'),
-            accountEmail: Text('Welcome to CityPrint!'),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, size: 42, color: Colors.deepPurple),
-            ),
-            decoration: BoxDecoration(color: Colors.deepPurple),
-          ),
-          ListTile(
-            leading: Icon(Icons.logout),
-            title: Text('Log Out'),
-            onTap: () async {
-              //await FirebaseAuth.instance.signOut();
-              Navigator.pushReplacementNamed(context, '/');
-            },
-          ),
-        ],
       ),
     );
   }

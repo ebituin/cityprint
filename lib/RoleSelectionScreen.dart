@@ -1,55 +1,44 @@
 import 'package:flutter/material.dart';
 
-class RoleSelectionScreen extends StatefulWidget {
-  @override
-  _RoleSelectionScreenState createState() => _RoleSelectionScreenState();
-}
-
-class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
-  String? selectedRole; // Track selected role
+class RoleSelectionScreen extends StatelessWidget {
+  const RoleSelectionScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue[50], // Light blue background
+      backgroundColor: Colors.blue[50],
+      appBar: AppBar(
+        title: const Text('Select Role'),
+        backgroundColor: const Color(0xFFB388EB),
+      ),
       body: Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                'Select user role',
+              const Text(
+                'Choose Your Role',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.blue[900],
                 ),
               ),
-              SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildRoleCard('user', Icons.person, 'User'),
-                  _buildRoleCard('seller', Icons.store, 'Seller'),
-                ],
+              const SizedBox(height: 40),
+              _buildRoleCard(
+                context,
+                'Customer',
+                'I want to order prints',
+                Icons.person_outline,
+                () => Navigator.pushNamed(context, '/signup'),
               ),
-              Spacer(),
-              ElevatedButton(
-                onPressed: selectedRole == null
-                    ? null
-                    : () {
-                        Navigator.pushNamed(context, '/signup',
-                            arguments: selectedRole);
-                      },
-                child: Text('Next Step', style: TextStyle(fontSize: 18)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+              const SizedBox(height: 20),
+              _buildRoleCard(
+                context,
+                'Business',
+                'I want to provide printing services',
+                Icons.store_outlined,
+                () => Navigator.pushNamed(context, '/signupBusiness'),
               ),
             ],
           ),
@@ -58,47 +47,49 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     );
   }
 
-  Widget _buildRoleCard(String role, IconData icon, String label) {
-    bool isSelected = selectedRole == role;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedRole = role;
-        });
-      },
-      child: Container(
-        width: 120,
-        height: 150,
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.blue[100] : Colors.white,
-          border: Border.all(
-            color: isSelected ? Colors.blue : Colors.grey[300]!,
-            width: 3,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.3),
-              blurRadius: 6,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon,
-                size: 50, color: isSelected ? Colors.blue[700] : Colors.grey),
-            SizedBox(height: 10),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                color: isSelected ? Colors.blue[800] : Colors.black87,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+  Widget _buildRoleCard(
+    BuildContext context,
+    String title,
+    String subtitle,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 48,
+                color: const Color(0xFFB388EB),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

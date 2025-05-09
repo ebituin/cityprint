@@ -1,7 +1,11 @@
 /*
 import 'package:flutter/material.dart';
+import 'auth_service.dart';
+import 'user_service.dart';
 
 class BusinessSettingsPage extends StatefulWidget {
+  const BusinessSettingsPage({Key? key}) : super(key: key);
+
   @override
   _BusinessSettingsPageState createState() => _BusinessSettingsPageState();
 }
@@ -12,10 +16,11 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
   final _descController = TextEditingController();
   final _itemController = TextEditingController();
 
+  String? businessName;
 
   List<String> items = [];
   bool isEditing = false; // starts as false (view-only)
-  bool isLoading = true;
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -37,6 +42,11 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
       */
     }
     setState(() => isLoading = false);
+    UserService.getBusinessName().then((name) {
+      setState(() {
+        businessName = name ?? 'No Business Name';
+      });
+    });
   }
 
   void _toggleEdit() {
@@ -63,18 +73,9 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
 
   Future<void> _saveSettings() async {
     if (_formKey.currentState!.validate()) {
-      User? user = _auth.currentUser;
-      if (user != null) {
-        await _firestore.collection('businesses').doc(user.uid).set({
-          'name': _nameController.text.trim(),
-          'description': _descController.text.trim(),
-          'items': items,
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Business details saved.')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Business details saved locally.')),
+      );
 
       setState(() => isEditing = false);
     }
@@ -82,24 +83,12 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: Text('Business Settings')),
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
+      backgroundColor: Colors.blue[50],
       appBar: AppBar(
-        title: Text('Business Settings'),
+        title: const Text('Business Settings'),
+        backgroundColor: const Color(0xFFB388EB),
         actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-            },
-          ),
           IconButton(
             icon: Icon(isEditing ? Icons.save : Icons.edit),
             onPressed: () {
@@ -110,20 +99,31 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
               }
             },
           ),
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () async {
+              await AuthService.signOut();
+
+              Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+            },
+          ),
         ],
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
+              Container(
+                child: Column(children: [Text('Business Name'), Text('$businessName')]),
+              ),
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(labelText: 'Business Name'),
                 readOnly: !isEditing,
-                validator: (value) => value!.isEmpty ? 'Enter a business name' : null,
+                validator:
+                    (value) => value!.isEmpty ? 'Enter a business name' : null,
               ),
               SizedBox(height: 12),
               TextFormField(
@@ -131,7 +131,8 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                 decoration: InputDecoration(labelText: 'Description'),
                 maxLines: 3,
                 readOnly: !isEditing,
-                validator: (value) => value!.isEmpty ? 'Enter a description' : null,
+                validator:
+                    (value) => value!.isEmpty ? 'Enter a description' : null,
               ),
               SizedBox(height: 24),
               Text(
@@ -143,12 +144,13 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                 String item = entry.value;
                 return ListTile(
                   title: Text(item),
-                  trailing: isEditing
-                      ? IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _removeItem(index),
-                        )
-                      : null,
+                  trailing:
+                      isEditing
+                          ? IconButton(
+                            icon: Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _removeItem(index),
+                          )
+                          : null,
                 );
               }),
               if (isEditing)
@@ -160,10 +162,7 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                         decoration: InputDecoration(hintText: 'New Item'),
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.add),
-                      onPressed: _addItem,
-                    ),
+                    IconButton(icon: Icon(Icons.add), onPressed: _addItem),
                   ],
                 ),
               SizedBox(height: 24),

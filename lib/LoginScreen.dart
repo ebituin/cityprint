@@ -13,7 +13,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  void _login() async {
+  // Sign-in logic with Supabase
+  Future<void> _login() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -33,12 +34,9 @@ class _LoginScreenState extends State<LoginScreen> {
          ).showSnackBar(SnackBar(content: Text('Sign-in successful!')));
        }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red,
-          content: Text('Error: $e'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Login failed: ${e.toString()}')));
     } finally {
       setState(() {
         _isLoading = false;
@@ -49,18 +47,13 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue[50], // Light blue hue for the background
+      backgroundColor: Colors.blue[50],
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24, vertical: 60),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Image.asset(
-                'assets/logo.png', // Replace with your actual image path
-                height: 200,
-              ),
-            ),
+            Center(child: Image.asset('assets/logo.png', height: 200)),
             SizedBox(height: 24),
             Text(
               'Welcome Back 👋',
@@ -86,8 +79,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     keyboardType: TextInputType.emailAddress,
-                    validator: (value) =>
-                        value!.isEmpty ? 'Please enter your email' : null,
+                    validator:
+                        (value) =>
+                            value!.isEmpty ? 'Please enter your email' : null,
                   ),
                   SizedBox(height: 16),
                   TextFormField(
@@ -112,15 +106,18 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Please enter your password' : null,
+                    validator:
+                        (value) =>
+                            value!.isEmpty
+                                ? 'Please enter your password'
+                                : null,
                   ),
                   SizedBox(height: 12),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
-                        // You can add Forgot Password flow here
+                        // You can add forgot password logic here
                       },
                       child: Text('Forgot Password?'),
                     ),
@@ -129,27 +126,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   _isLoading
                       ? CircularProgressIndicator()
                       : SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _login,
-                            style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor: Colors.deepPurple,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(
-                              'Login',
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.white),
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _login,
+                          style: ElevatedButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: Colors.deepPurple,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
+                          child: Text(
+                            'Login',
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
                         ),
+                      ),
                   SizedBox(height: 20),
                   TextButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, '/roleselection');
+                      Navigator.pushNamed(context, '/signup' );
                     },
                     child: Text('Don’t have an account? Sign up'),
                   ),
