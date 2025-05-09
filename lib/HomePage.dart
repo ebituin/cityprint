@@ -1,5 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 // Home Page
@@ -81,10 +79,9 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-          ),
+          ),/*
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('businesses').snapshots(),
+            child: StreamBuilder<>(
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
@@ -134,7 +131,7 @@ class _HomePageState extends State<HomePage> {
                 );
               },
             ),
-          ),
+          ),*/
         ],
       ),
     );
@@ -147,7 +144,7 @@ class OrdersPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = null; //
 
     if (user == null) {
       return Scaffold(
@@ -181,7 +178,7 @@ class OrdersPage extends StatelessWidget {
             ],
           ),
 
-        ),
+        ),/*
         body: TabBarView(
           children: ['pending', 'accepted', 'cancelled'].map((status) {
             return StreamBuilder<QuerySnapshot>(
@@ -222,7 +219,7 @@ class OrdersPage extends StatelessWidget {
               },
             );
           }).toList(),
-        ),
+        ),*/
       ),
     );
   }
@@ -251,11 +248,10 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
   }
 
   Future<void> _placeOrder() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = null;
     if (user == null) return;
 
-    final firestore = FirebaseFirestore.instance;
-
+/*
     for (var entry in _quantities.entries) {
       if (entry.value > 0) {
         await firestore.collection('orders').add({
@@ -265,7 +261,7 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
           'status': 'pending',
         });
       }
-    }
+    }*/
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Order placed successfully!')),
@@ -397,7 +393,7 @@ class AppDrawer extends StatelessWidget {
             leading: Icon(Icons.logout),
             title: Text('Log Out'),
             onTap: () async {
-              await FirebaseAuth.instance.signOut();
+              //await FirebaseAuth.instance.signOut();
               Navigator.pushReplacementNamed(context, '/');
             },
           ),

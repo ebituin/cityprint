@@ -1,4 +1,4 @@
-import 'package:cityprint/BusinessSettingsPage.dart';
+/*import 'package:cityprint/BusinessSettingsPage.dart';
 import 'package:flutter/material.dart';
 
 class BusinessPage extends StatefulWidget {
@@ -98,4 +98,4 @@ class _BusinessPageState extends State<BusinessPage> {
       
     );
   }
-}
+}*/

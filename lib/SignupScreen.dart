@@ -1,5 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+/*
 import 'package:flutter/material.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -132,3 +131,4 @@ class _SignupScreenState extends State<SignupScreen> {
 extension StringExtensions on String {
   String capitalize() => this[0].toUpperCase() + substring(1);
 }
+*/

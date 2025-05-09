@@ -1,6 +1,5 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -25,30 +24,14 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      UserCredential userCred = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(email: email, password: password);
-
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userCred.user!.uid)
-          .get();
-
-      final role = userDoc['role'];
-
-      if (role == 'user') {
+      final response = await AuthService.signIn(email, password);
+      final user = response.user;
+       if (user != null) {
         Navigator.pushReplacementNamed(context, '/home');
-      } else if (role == 'seller') {
-        Navigator.pushReplacementNamed(context, '/business');
-      } else {
-        throw Exception('Unknown role');
-      }
-    } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.red,
-          content: Text('Login failed: ${e.message}'),
-        ),
-      );
+         ScaffoldMessenger.of(
+           context,
+         ).showSnackBar(SnackBar(content: Text('Sign-in successful!')));
+       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

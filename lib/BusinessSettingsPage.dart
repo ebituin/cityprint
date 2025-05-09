@@ -1,5 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+/*
 import 'package:flutter/material.dart';
 
 class BusinessSettingsPage extends StatefulWidget {
@@ -13,8 +12,6 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
   final _descController = TextEditingController();
   final _itemController = TextEditingController();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   List<String> items = [];
   bool isEditing = false; // starts as false (view-only)
@@ -27,15 +24,17 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
   }
 
   Future<void> _loadBusinessData() async {
-    User? user = _auth.currentUser;
+    //User? user = null;
     if (user != null) {
-      final doc = await _firestore.collection('businesses').doc(user.uid).get();
+      //final doc = await _firestore.collection('businesses').doc(user.uid).get();
+      /*
       if (doc.exists) {
         final data = doc.data()!;
         _nameController.text = data['name'] ?? '';
         _descController.text = data['description'] ?? '';
         items = List<String>.from(data['items'] ?? []);
       }
+      */
     }
     setState(() => isLoading = false);
   }
@@ -180,3 +179,5 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
     );
   }
 }
+
+*/
