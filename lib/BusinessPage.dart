@@ -99,8 +99,6 @@ class _AppDrawerState extends State<AppDrawer> {
 class BusinessPage extends StatefulWidget {
   const BusinessPage({Key? key}) : super(key: key);
 
-  const BusinessPage({Key? key}) : super(key: key);
-
   @override
   _BusinessPageState createState() => _BusinessPageState();
 }
@@ -110,9 +108,6 @@ class _BusinessPageState extends State<BusinessPage> {
   bool isLoading = true;
 
   final List<Map<String, String>> pendingOrders = [
-    {'order': 'Order #1001', 'details': '3x A4 Posters, 1x Banner'},
-    {'order': 'Order #1002', 'details': '50x Business Cards'},
-  ];
     {'order': 'Order #1001', 'details': '3x A4 Posters, 1x Banner'},
     {'order': 'Order #1002', 'details': '50x Business Cards'},
   ];
@@ -169,9 +164,7 @@ class _BusinessPageState extends State<BusinessPage> {
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
-        padding: const EdgeInsets.all(16),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,13 +172,10 @@ class _BusinessPageState extends State<BusinessPage> {
             Text(
               order['order'] ?? 'No Name',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
             const SizedBox(height: 8),
             Text(order['details'] ?? 'No Details'),
             if (showButtons) ...[
-              const SizedBox(height: 16),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -196,16 +186,13 @@ class _BusinessPageState extends State<BusinessPage> {
                       backgroundColor: Colors.green,
                     ),
                     child: const Text('Accept'),
-                    child: const Text('Accept'),
                   ),
-                  const SizedBox(width: 8),
                   const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: onDecline,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                     ),
-                    child: const Text('Decline'),
                     child: const Text('Decline'),
                   ),
                 ],
@@ -223,7 +210,6 @@ class _BusinessPageState extends State<BusinessPage> {
       child: Text(
         title,
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -232,18 +218,13 @@ class _BusinessPageState extends State<BusinessPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.blue[50],
-      backgroundColor: Colors.blue[50],
       appBar: AppBar(
-        title: const Text('Business Dashboard'),
-        backgroundColor: const Color(0xFFB388EB),
         title: const Text('Business Dashboard'),
         backgroundColor: const Color(0xFFB388EB),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            icon: const Icon(Icons.settings),
             onPressed: () {
-              Navigator.pushNamed(context, '/businessSettings');
               Navigator.pushNamed(context, '/businessSettings');
             },
           ),
@@ -259,8 +240,6 @@ class _BusinessPageState extends State<BusinessPage> {
               _buildSectionTitle('Pending Orders'),
               if (pendingOrders.isEmpty)
                 const Center(child: Text('No pending orders.')),
-              if (pendingOrders.isEmpty)
-                const Center(child: Text('No pending orders.')),
               ...pendingOrders.asMap().entries.map((entry) {
                 int index = entry.key;
                 var order = entry.value;
@@ -273,19 +252,13 @@ class _BusinessPageState extends State<BusinessPage> {
               }),
 
               const SizedBox(height: 24),
-              const SizedBox(height: 24),
               _buildSectionTitle('Accepted Orders'),
-              if (acceptedOrders.isEmpty)
-                const Center(child: Text('No accepted orders.')),
               if (acceptedOrders.isEmpty)
                 const Center(child: Text('No accepted orders.')),
               ...acceptedOrders.map((order) => _buildOrderCard(order)).toList(),
 
               const SizedBox(height: 24),
-              const SizedBox(height: 24),
               _buildSectionTitle('Declined Orders'),
-              if (declinedOrders.isEmpty)
-                const Center(child: Text('No declined orders.')),
               if (declinedOrders.isEmpty)
                 const Center(child: Text('No declined orders.')),
               ...declinedOrders.map((order) => _buildOrderCard(order)).toList(),

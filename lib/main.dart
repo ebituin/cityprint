@@ -26,14 +26,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'CityPrint',
-      title: 'CityPrint',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.blue[50],
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFB388EB),
-          elevation: 0,
-        ),
         scaffoldBackgroundColor: Colors.blue[50],
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFFB388EB),
@@ -48,7 +42,7 @@ class MyApp extends StatelessWidget {
         '/home': (context) => HomePage(),
         '/business': (context) => BusinessPage(),
         '/signupbusiness': (context) => SignupBusinessScreen(),
-     //   '/BusinessSettings': (context) => BusinessSettingsPage(),
+       // '/businessSettings': (context) => BusinessSettingsPage(),
       },
       debugShowCheckedModeBanner: false,
     );
