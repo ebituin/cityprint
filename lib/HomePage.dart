@@ -336,6 +336,8 @@ class BusinessDetailPage extends StatefulWidget {
 
 class _BusinessDetailPageState extends State<BusinessDetailPage> {
   final Map<String, int> _quantities = {};
+  int totalPrice = 99;
+  int quantity = 0;
 
   @override
   void initState() {
@@ -344,13 +346,37 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
     for (var item in items) {
       _quantities[item['name']] = 0;
     }
+    quantity = _quantities['item1'] ?? 0;
+  }
+
+  List<dynamic> items = [];
+
+  Future<void> _placeOrder() async {
+    final userId = Supabase.instance.client.auth.currentUser;
+    if (userId == null) {
+      print('User not authenticated');
+      return;
+    }
+
+    for (var item in items) {
+      final int quantity = _quantities[item['name']] ?? 0;
+
+      if (quantity > 0) {
+        await Supabase.instance.client.from('orders').insert({
+          'user_id': userId.id,
+          'business_id': widget.business['business_id'],
+          'item_id': item['item_id'],
+          'quantity': quantity,
+          'total_price': totalPrice,
+          'status': 'pending',
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<dynamic> items = widget.business['item'] ?? [];
-
-    bool isSeller = false;
+    items = widget.business['item'] ?? [];
 
     return Scaffold(
       appBar: AppBar(
@@ -396,37 +422,102 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
             ...items.map((item) {
               return Card(
                 margin: EdgeInsets.symmetric(vertical: 6),
-                child: ListTile(
-                  title: Text(item['name']),
-                  trailing: Container(
-                    width: 120,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.remove),
-                          onPressed: () {
-                            setState(() {
-                              if (_quantities[item['name']] != null &&
-                                  _quantities[item['name']]! > 0) {
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item['name'],
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (item['description'] != null)
+                                  Text(
+                                    item['description'],
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green[100],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '₱${(item['price'] as num?)?.toStringAsFixed(2) ?? '0.00'}',
+                              style: TextStyle(
+                                color: Colors.green[700],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.remove_circle_outline),
+                            color: const Color(0xFFB388EB),
+                            onPressed: () {
+                              setState(() {
+                                if (_quantities[item['name']] != null &&
+                                    _quantities[item['name']]! > 0) {
+                                  _quantities[item['name']] =
+                                      _quantities[item['name']]! - 1;
+                                }
+                              });
+                            },
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${_quantities[item['name']]}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.add_circle_outline),
+                            color: const Color(0xFFB388EB),
+                            onPressed: () {
+                              setState(() {
                                 _quantities[item['name']] =
-                                    _quantities[item['name']]! - 1;
-                              }
-                            });
-                          },
-                        ),
-                        Text('${_quantities[item['name']]}'),
-                        IconButton(
-                          icon: Icon(Icons.add),
-                          onPressed: () {
-                            setState(() {
-                              _quantities[item['name']] =
-                                  (_quantities[item['name']] ?? 0) + 1;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
+                                    (_quantities[item['name']] ?? 0) + 1;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -434,9 +525,17 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
             SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: () {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Order simulated.')));
+                if (_quantities.values.any((quantity) => quantity > 0)) {
+                  _placeOrder();
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Order simulated.')));
+                } else {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('No items selected.')));
+                }
               },
               icon: Icon(Icons.shopping_cart_checkout),
               label: Text(

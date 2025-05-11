@@ -37,14 +37,16 @@ class _SignupScreenState extends State<SignupScreen> {
     try {
       final res = await AuthService.signUp(email, password);
       final user = res.user;
-
-      if (user == null) throw Exception('Signup failed');
-
+      if (user == null) {
+        throw Exception('Signup failed');
+      }
+      
       await AuthService.insertUserData(
         userId: user.id,
         name: name,
         email: email,
       );
+
 
       if (!mounted) return;
       

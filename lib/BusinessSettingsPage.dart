@@ -1,5 +1,6 @@
-/*
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_service.dart';
 import 'user_service.dart';
 
@@ -15,12 +16,14 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
   final _nameController = TextEditingController();
   final _descController = TextEditingController();
   final _itemController = TextEditingController();
+  final _itemDescController = TextEditingController();
+  final _itemPriceController = TextEditingController();
 
+  String? _businessId;
   String? businessName;
-
-  List<String> items = [];
-  bool isEditing = false; // starts as false (view-only)
-  bool isLoading = false;
+  List<Map<String, dynamic>> items = [];
+  bool isEditing = false;
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -28,25 +31,56 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
     _loadBusinessData();
   }
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descController.dispose();
+    _itemController.dispose();
+    _itemDescController.dispose();
+    _itemPriceController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadBusinessData() async {
-    //User? user = null;
-    if (user != null) {
-      //final doc = await _firestore.collection('businesses').doc(user.uid).get();
-      /*
-      if (doc.exists) {
-        final data = doc.data()!;
-        _nameController.text = data['name'] ?? '';
-        _descController.text = data['description'] ?? '';
-        items = List<String>.from(data['items'] ?? []);
+    setState(() => isLoading = true);
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final response =
+            await Supabase.instance.client
+                .from('business')
+                .select('*, item(*)')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+        if (response != null) {
+          setState(() {
+            _businessId = response['business_id'];
+            _nameController.text = response['name'] ?? '';
+            _descController.text = response['description'] ?? '';
+            items =
+                (response['item'] as List?)
+                    ?.map(
+                      (item) => {
+                        'name': item['name'] as String,
+                        'description': item['description'] as String? ?? '',
+                        'price': (item['price'] as num?)?.toDouble() ?? 0.0,
+                      },
+                    )
+                    .toList() ??
+                [];
+            businessName = response['name'];
+          });
+        }
       }
-      */
+    } catch (e) {
+      print('Error loading business data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading business data: $e')),
+      );
+    } finally {
+      setState(() => isLoading = false);
     }
-    setState(() => isLoading = false);
-    UserService.getBusinessName().then((name) {
-      setState(() {
-        businessName = name ?? 'No Business Name';
-      });
-    });
   }
 
   void _toggleEdit() {
@@ -57,27 +91,148 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
 
   void _addItem() {
     final newItem = _itemController.text.trim();
-    if (newItem.isNotEmpty) {
-      setState(() {
-        items.add(newItem);
-        _itemController.clear();
-      });
+    final newDesc = _itemDescController.text.trim();
+    final priceText = _itemPriceController.text.trim();
+
+    if (newItem.isNotEmpty && priceText.isNotEmpty) {
+      try {
+        // Simple price parsing
+        final price = double.tryParse(priceText);
+
+        if (price == null) {
+          print('Failed to parse price: $priceText');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Please enter a valid price number')),
+          );
+          return;
+        }
+
+        if (price <= 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Price must be greater than 0')),
+          );
+          return;
+        }
+
+        print('Successfully parsed price: $price');
+        setState(() {
+          items.add(<String, Object>{
+            'name': newItem,
+            'description': newDesc,
+            'price': price,
+          });
+          _itemController.clear();
+          _itemDescController.clear();
+          _itemPriceController.clear();
+        });
+      } catch (e) {
+        print('Error in _addItem: $e');
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error adding item: $e')));
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please fill in all required fields')),
+      );
     }
   }
 
-  void _removeItem(int index) {
-    setState(() {
-      items.removeAt(index);
-    });
+  void _removeItem(int index) async {
+    try {
+      final item = items[index];
+      if (_businessId != null) {
+        // Delete from Supabase
+        await Supabase.instance.client
+            .from('item')
+            .delete()
+            .eq('business_id', _businessId!)
+            .eq('name', item['name'] as String);
+
+        setState(() {
+          items.removeAt(index);
+        });
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Item deleted successfully')));
+      }
+    } catch (e) {
+      print('Error deleting item: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error deleting item: $e')));
+    }
   }
 
   Future<void> _saveSettings() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Business details saved locally.')),
-      );
+      setState(() => isLoading = true);
+      try {
+        final user = Supabase.instance.client.auth.currentUser;
+        if (user == null) throw Exception('No user logged in');
 
-      setState(() => isEditing = false);
+        if (_businessId != null) {
+          // Update business details
+          await Supabase.instance.client
+              .from('business')
+              .update({
+                'name': _nameController.text.trim(),
+                'description': _descController.text.trim(),
+              })
+              .eq('business_id', _businessId!);
+
+          // Get existing items
+          final existingItems = await Supabase.instance.client
+              .from('item')
+              .select('name')
+              .eq('business_id', _businessId!);
+
+          final existingNames =
+              (existingItems as List)
+                  .map((item) => (item['name'] as String).trim().toLowerCase())
+                  .toSet();
+
+          // Update items
+          for (var item in items) {
+            final normalizedItem = item['name']!.trim().toLowerCase();
+            if (!existingNames.contains(normalizedItem)) {
+              await Supabase.instance.client.from('item').insert({
+                'business_id': _businessId,
+                'name': item['name']!.trim(),
+                'description': item['description']!.trim(),
+                'price': (item['price'] as num).toDouble(),
+              });
+            } else {
+              // Update existing item
+              await Supabase.instance.client
+                  .from('item')
+                  .update({
+                    'description': item['description']!.trim(),
+                    'price': (item['price'] as num).toDouble(),
+                  })
+                  .eq('business_id', _businessId!)
+                  .eq('name', item['name']!.trim());
+            }
+          }
+        }
+
+        setState(() {
+          businessName = _nameController.text.trim();
+          isEditing = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Business details saved successfully')),
+        );
+      } catch (e) {
+        print('Error saving business data: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving business data: $e')),
+        );
+      } finally {
+        setState(() => isLoading = false);
+      }
     }
   }
 
@@ -86,97 +241,316 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
     return Scaffold(
       backgroundColor: Colors.blue[50],
       appBar: AppBar(
-        title: const Text('Business Settings'),
         backgroundColor: const Color(0xFFB388EB),
-        actions: [
-          IconButton(
-            icon: Icon(isEditing ? Icons.save : Icons.edit),
-            onPressed: () {
-              if (isEditing) {
-                _saveSettings();
-              } else {
-                _toggleEdit();
-              }
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () async {
-              await AuthService.signOut();
-
-              Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-            },
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              Container(
-                child: Column(children: [Text('Business Name'), Text('$businessName')]),
-              ),
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(labelText: 'Business Name'),
-                readOnly: !isEditing,
-                validator:
-                    (value) => value!.isEmpty ? 'Enter a business name' : null,
-              ),
-              SizedBox(height: 12),
-              TextFormField(
-                controller: _descController,
-                decoration: InputDecoration(labelText: 'Description'),
-                maxLines: 3,
-                readOnly: !isEditing,
-                validator:
-                    (value) => value!.isEmpty ? 'Enter a description' : null,
-              ),
-              SizedBox(height: 24),
-              Text(
-                'Items Offered',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              ...items.asMap().entries.map((entry) {
-                int index = entry.key;
-                String item = entry.value;
-                return ListTile(
-                  title: Text(item),
-                  trailing:
-                      isEditing
-                          ? IconButton(
-                            icon: Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _removeItem(index),
-                          )
-                          : null,
-                );
-              }),
-              if (isEditing)
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _itemController,
-                        decoration: InputDecoration(hintText: 'New Item'),
-                      ),
-                    ),
-                    IconButton(icon: Icon(Icons.add), onPressed: _addItem),
-                  ],
-                ),
-              SizedBox(height: 24),
-              if (isEditing)
-                ElevatedButton(
-                  onPressed: _saveSettings,
-                  child: Text('Save All Changes'),
-                ),
-            ],
+        elevation: 0,
+        leading: Container(
+          width: 47,
+          height: 42,
+          margin: EdgeInsets.only(left: 23),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+          child: IconButton(
+            icon: Icon(Icons.arrow_back, color: Color(0xFF1D1B20), size: 24),
+            onPressed: () => Navigator.pop(context),
           ),
         ),
+        title: Text(
+          businessName ?? 'Store',
+          style: TextStyle(
+            fontFamily: 'Roboto',
+            fontSize: 24,
+            fontWeight: FontWeight.w400,
+            color: Colors.white,
+            height: 28 / 24,
+          ),
+        ),
+        centerTitle: true,
       ),
+      body:
+          isLoading
+              ? Center(child: CircularProgressIndicator())
+              : Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 47),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 85),
+                        // Store Information
+                        Container(
+                          width: 301,
+                          height: 243,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Stack(
+                            children: [
+                              Positioned(
+                                left: 19,
+                                top: 19,
+                                child: Text(
+                                  'Store Name',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: 23,
+                                top: 67,
+                                child: Container(
+                                  width: 254,
+                                  child: Text(
+                                    _descController.text,
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w400,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                right: 25,
+                                top: 109,
+                                child: IconButton(
+                                  icon: Icon(
+                                    Icons.edit_outlined,
+                                    color: Color(0xFF1E1E1E),
+                                    size: 24,
+                                  ),
+                                  onPressed: () => _toggleEdit(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 28),
+                        // Items Section
+                        Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: Text(
+                            'Items',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        // Items List
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: items.length,
+                            itemBuilder: (context, index) {
+                              var item = items[index];
+                              return Container(
+                                width: 296,
+                                height: 97,
+                                margin: EdgeInsets.only(bottom: 40),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Stack(
+                                  children: [
+                                    Positioned(
+                                      left: 18,
+                                      top: 19,
+                                      child: Text(
+                                        item['name']?.toString() ?? '',
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.w400,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      left: 19,
+                                      top: 56,
+                                      child: Text(
+                                        item['description']?.toString() ?? '',
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w400,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      right: 25,
+                                      top: 37,
+                                      child: IconButton(
+                                        icon: Icon(
+                                          Icons.edit_outlined,
+                                          color: Color(0xFF1E1E1E),
+                                          size: 24,
+                                        ),
+                                        onPressed: () {
+                                          // Handle item edit
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Add Item Button
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            builder:
+                                (context) => Container(
+                                  padding: EdgeInsets.only(
+                                    top: 20,
+                                    left: 40,
+                                    right: 40,
+                                    bottom: 20
+                                  ),
+                                  height: 350,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF49454F),
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(16),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Container(
+                                        width: 60,
+                                        height: 4,
+                                        margin: EdgeInsets.only(
+                                          bottom: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Color(0xFFD9D9D9),
+                                          borderRadius: BorderRadius.circular(
+                                            2,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        'Edit Item',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 23,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFFD9D9D9),
+                                        ),
+                                      ),
+                                      SizedBox(height: 12),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            flex: 2,
+                                            child: SizedBox(
+                                              height: 60,
+                                              child: TextField(
+                                                controller: _itemController,
+                                                decoration: InputDecoration(
+                                                  labelText: 'Name',
+                                                  filled: true,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(width: 12),
+                                          Expanded(
+                                            flex: 1,
+                                            child: SizedBox(
+                                              height: 60,
+                                              child: TextField(
+                                                controller:
+                                                    _itemPriceController,
+                                                keyboardType:
+                                                    TextInputType.numberWithOptions(
+                                                      decimal: true,
+                                                    ),
+                                                inputFormatters: [
+                                                  FilteringTextInputFormatter.allow(
+                                                    RegExp(r'[0-9.]'),
+                                                  ),
+                                                ],
+                                                decoration: InputDecoration(
+                                                  labelText: 'Price',
+                                                  filled: true,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 12),
+                                      SizedBox(
+                                        height: 120,
+                                        child: TextField(
+                                          controller: _itemDescController,
+                                          maxLines: 2,
+                                          
+                                          decoration: InputDecoration(
+                                            labelText: 'Description',
+                                            filled: true,
+                                            
+                                          ),
+                                        ),
+                                      ),
+                                      Spacer(),
+                                      SizedBox(
+                                        height: 56,
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Color(
+                                              0xFFD9D9D9,
+                                            ),
+                                            foregroundColor: Colors.black,
+                                          ),
+                                          onPressed: () {
+                                            _addItem();
+                                            Navigator.pop(context);
+                                          },
+                                          child: Text(
+                                            'Done',
+                                            style: TextStyle(fontSize: 18),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                          );
+                        },
+                        child: Icon(
+                          Icons.add_circle_outline,
+                          size: 100,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
     );
   }
 }
-
-*/

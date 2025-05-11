@@ -51,7 +51,10 @@ class _AppDrawerState extends State<AppDrawer> {
                       style: TextStyle(fontSize: 20),
                     ),
                     onTap: () {
-                      Navigator.pushReplacementNamed(context, '/business');
+                      Navigator.pushReplacementNamed(
+                        context,
+                        '/businessSettings',
+                      );
                     },
                   ),
                 ListTile(

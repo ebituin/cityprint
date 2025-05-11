@@ -31,8 +31,6 @@ class _SignupBusinessScreenState extends State<SignupBusinessScreen> {
     super.dispose();
   }
 
-  
-
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -49,12 +47,10 @@ class _SignupBusinessScreenState extends State<SignupBusinessScreen> {
       if (user == null) throw Exception('No user logged in');
 
       // Check if user already has a store
-      
 
       // Insert business data into the database
       final businessResponse =
           await Supabase.instance.client.from('business').insert({
-            'business_id': user.id,
             'name': businessName,
             'user_id': user.id,
             'description': _DescriptionController.text.trim(),
@@ -68,7 +64,6 @@ class _SignupBusinessScreenState extends State<SignupBusinessScreen> {
 
       // Insert item data directly linked to business
       await Supabase.instance.client.from('item').insert({
-        'item_id': user.id,
         'name': itemName,
         'price': double.parse(itemPrice),
         'business_id': businessId,
