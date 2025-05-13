@@ -221,11 +221,13 @@ class _BusinessPageState extends State<BusinessPage> {
           status: newStatus,
         );
 
+        // Clone the order and update the status
+        final updatedOrder = Map<String, dynamic>.from(order);
+        updatedOrder['status'] = newStatus;
+
         setState(() {
-          sourceList.remove(order);
-          targetList.add(
-            order..['status'] = newStatus,
-          ); // Update the order's status
+          sourceList.removeWhere((o) => o['order_id'] == orderId);
+          targetList.add(updatedOrder);
         });
       } catch (e) {
         print('Error updating order status: $e');

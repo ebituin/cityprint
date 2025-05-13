@@ -115,7 +115,7 @@ class _AppDrawerState extends State<AppDrawer> {
                     Icon(Icons.exit_to_app, size: 40, color: Colors.white),
                     SizedBox(width: 10),
                     Text(
-                      'Exit App',
+                      'Logout',
                       style: TextStyle(fontSize: 20, color: Colors.white),
                     ),
                   ],
@@ -149,15 +149,25 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadBusinesses() async {
     try {
-      final response = await Supabase.instance.client
-          .from('business')
-          .select('*, item(*)')
-          .order('name');
+      final userId = Supabase.instance.client.auth.currentUser?.id;
 
-      setState(() {
-        _businesses = List<Map<String, dynamic>>.from(response);
-        _isLoading = false;
-      });
+      if (userId != null) {
+        final response = await Supabase.instance.client
+            .from('business')
+            .select('*, item(*)')
+            .order('name');
+
+        if (response is List) {
+          setState(() {
+            // Filter out the user's own business
+            _businesses =
+                List<Map<String, dynamic>>.from(
+                  response,
+                ).where((business) => business['user_id'] != userId).toList();
+            _isLoading = false;
+          });
+        }
+      }
     } catch (e) {
       print('Error loading businesses: $e');
       setState(() => _isLoading = false);
@@ -289,8 +299,73 @@ class _HomePageState extends State<HomePage> {
 }
 
 // Orders Page
-class OrdersPage extends StatelessWidget {
-  const OrdersPage({super.key});
+class OrdersPage extends StatefulWidget {
+  const OrdersPage({Key? key}) : super(key: key);
+
+  @override
+  State<OrdersPage> createState() => _OrdersPageState();
+}
+
+class _OrdersPageState extends State<OrdersPage> {
+  List<Map<String, dynamic>> pending = [];
+  List<Map<String, dynamic>> accepted = [];
+  List<Map<String, dynamic>> cancelled = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchOrders();
+  }
+
+  Future<void> fetchOrders() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      final response = await Supabase.instance.client
+          .from('orders')
+          .select('*, item(name)')
+          .eq('user_id', user.id);
+
+      final data = List<Map<String, dynamic>>.from(response);
+
+      if (!mounted) return; // ⛔ prevent setState if widget is disposed
+
+      setState(() {
+        pending = data.where((o) => o['status'] == 'pending').toList();
+        accepted = data.where((o) => o['status'] == 'accepted').toList();
+        cancelled = data.where((o) => o['status'] == 'declined').toList();
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading orders: $e');
+      if (!mounted) return; // ⛔ check again before setting state
+      setState(() => isLoading = false);
+    }
+  }
+
+  Widget buildOrderList(List<Map<String, dynamic>> orders) {
+    if (orders.isEmpty) {
+      return Center(child: Text('No orders in this section.'));
+    }
+
+    return ListView.builder(
+      itemCount: orders.length,
+      itemBuilder: (context, index) {
+        final order = orders[index];
+        final itemName = order['item']?['name'] ?? 'Unknown item';
+        return ListTile(
+          leading: Icon(Icons.receipt),
+          title: Text(itemName),
+          subtitle: Text(
+            'Qty: ${order['quantity']} • ₱${order['total_price']}',
+          ),
+          trailing: Text(order['status']),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -303,7 +378,6 @@ class OrdersPage extends StatelessWidget {
           bottom: TabBar(
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
-            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             tabs: [
               Tab(text: 'Pending'),
               Tab(text: 'Accepted'),
@@ -311,13 +385,16 @@ class OrdersPage extends StatelessWidget {
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            Center(child: Text('No pending orders.')),
-            Center(child: Text('No accepted orders.')),
-            Center(child: Text('No cancelled orders.')),
-          ],
-        ),
+        body:
+            isLoading
+                ? Center(child: CircularProgressIndicator())
+                : TabBarView(
+                  children: [
+                    buildOrderList(pending),
+                    buildOrderList(accepted),
+                    buildOrderList(cancelled),
+                  ],
+                ),
       ),
     );
   }
@@ -352,9 +429,18 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
   List<dynamic> items = [];
 
   Future<void> _placeOrder() async {
-    final userId = Supabase.instance.client.auth.currentUser;
-    if (userId == null) {
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser == null) {
       print('User not authenticated');
+      return;
+    }
+
+    final storeOwnerId = widget.business['user_id'];
+    if (currentUser.id == storeOwnerId) {
+      // 🛑 Show error: cannot order from own store
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("You can't order from your own store.")),
+      );
       return;
     }
 
@@ -363,7 +449,7 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
 
       if (quantity > 0) {
         await Supabase.instance.client.from('orders').insert({
-          'user_id': userId.id,
+          'user_id': currentUser.id,
           'business_id': widget.business['business_id'],
           'item_id': item['item_id'],
           'quantity': quantity,

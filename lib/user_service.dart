@@ -38,15 +38,16 @@ class UserService {
     required String status,
   }) async {
     try {
-      final response = await supabase
-          .from('orders')
-          .update({'status': status})
-          .eq('order_id', orderId);
+      final response =
+          await supabase
+              .from('orders')
+              .update({'status': status})
+              .eq('order_id', orderId)
+              .select()
+              .maybeSingle();
 
-      if (response.error != null) {
-        throw Exception(
-          'Error updating order status: ${response.error?.message}',
-        );
+      if (response == null) {
+        throw Exception('Order not found or failed to update.');
       }
 
       print('Order status updated to $status');
@@ -55,20 +56,22 @@ class UserService {
       throw Exception('Failed to update order status: $e');
     }
   }
-  static Future<List<Map<String, dynamic>>> fetchOrdersForBusiness(String businessId) async {
-  try {
-    final response = await supabase
-        .from('orders')
-        .select()
-        .eq('business_id', businessId)
-        .order('created_at', ascending: false);
 
-    // Ensure the response is properly cast to a list of maps
-    return List<Map<String, dynamic>>.from(response);
-  } catch (e) {
-    print('Error fetching orders: $e');
-    throw Exception('Failed to fetch orders: $e');
+  static Future<List<Map<String, dynamic>>> fetchOrdersForBusiness(
+    String businessId,
+  ) async {
+    try {
+      final response = await supabase
+          .from('orders')
+          .select()
+          .eq('business_id', businessId)
+          .order('created_at', ascending: false);
+
+      // Ensure the response is properly cast to a list of maps
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print('Error fetching orders: $e');
+      throw Exception('Failed to fetch orders: $e');
+    }
   }
-}
-
 }
