@@ -1,9 +1,7 @@
-import 'package:cityprint/BusinessSettingsPage.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:cityprint/auth_service.dart';
+import 'user_service.dart'; // Ensure UserService is imported
 
-// App Drawer
 class AppDrawer extends StatefulWidget {
   final bool hasStore;
   const AppDrawer({Key? key, required this.hasStore}) : super(key: key);
@@ -107,64 +105,146 @@ class BusinessPage extends StatefulWidget {
 }
 
 class _BusinessPageState extends State<BusinessPage> {
-  bool hasStore = false;
+  bool hasStore = true;
   bool isLoading = true;
-
-  final List<Map<String, String>> pendingOrders = [
-    {'order': 'Order #1001', 'details': '3x A4 Posters, 1x Banner'},
-    {'order': 'Order #1002', 'details': '50x Business Cards'},
-  ];
-
-  final List<Map<String, String>> acceptedOrders = [];
-  final List<Map<String, String>> declinedOrders = [];
+  List<Map<String, dynamic>> pendingOrders = [];
+  List<Map<String, dynamic>> acceptedOrders = [];
+  List<Map<String, dynamic>> declinedOrders = [];
 
   @override
   void initState() {
     super.initState();
-    _checkStore();
+    _fetchOrders();
   }
 
-  Future<void> _checkStore() async {
+  Future<void> _fetchOrders() async {
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
-        final response =
+        // Fetch business ID using user ID
+        final businessResponse =
             await Supabase.instance.client
                 .from('business')
-                .select()
+                .select('business_id')
                 .eq('user_id', user.id)
                 .maybeSingle();
+
+        // Log the business response
+        print('Business Response: $businessResponse');
+
+        if (businessResponse == null ||
+            businessResponse['business_id'] == null) {
+          throw Exception('No business found for this user.');
+        }
+
+        final businessId = businessResponse['business_id'] as String;
+
+        // Fetch orders using the business_id
+        final ordersResponse = await Supabase.instance.client
+            .from('orders')
+            .select('order_id, status, item_id, quantity, total_price')
+            .eq('business_id', businessId);
+
+        // Log the orders response to debug
+        print('Orders Response: $ordersResponse');
+
+        if (ordersResponse is List) {
+          final List<Map<String, dynamic>> orders = [];
+
+          for (var order in ordersResponse) {
+            final itemId = order['item_id'];
+
+            // Fetch the item details using the item_id
+            final itemResponse =
+                await Supabase.instance.client
+                    .from('item')
+                    .select('name, price')
+                    .eq('item_id', itemId)
+                    .maybeSingle();
+
+            // Log the item response
+            print('Item Response for item_id $itemId: $itemResponse');
+
+            if (itemResponse != null) {
+              order['name'] = itemResponse['name'];
+              order['price'] = itemResponse['price'];
+            } else {
+              // If no item found, log it
+              print('Item with item_id $itemId not found.');
+            }
+
+            orders.add(order);
+          }
+
+          setState(() {
+            // Separate orders by their status
+            pendingOrders =
+                orders.where((order) => order['status'] == 'pending').toList();
+            acceptedOrders =
+                orders.where((order) => order['status'] == 'accepted').toList();
+            declinedOrders =
+                orders.where((order) => order['status'] == 'declined').toList();
+            isLoading = false;
+          });
+        } else {
+          print('No orders found for the business.');
+          setState(() {
+            isLoading = false;
+          });
+        }
+      } else {
+        print('No user is currently logged in.');
         setState(() {
-          hasStore = response != null;
           isLoading = false;
         });
       }
     } catch (e) {
-      print('Error checking store: $e');
-      setState(() => isLoading = false);
+      print('Error fetching orders: $e');
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
-  void _acceptOrder(int index) {
-    setState(() {
-      acceptedOrders.add(pendingOrders[index]);
-      pendingOrders.removeAt(index);
-    });
-  }
+  Future<void> _updateOrderStatus({
+    required Map<String, dynamic> order,
+    required String newStatus,
+    required List<Map<String, dynamic>> sourceList,
+    required List<Map<String, dynamic>> targetList,
+  }) async {
+    final orderId = order['order_id'];
 
-  void _declineOrder(int index) {
-    setState(() {
-      declinedOrders.add(pendingOrders[index]);
-      pendingOrders.removeAt(index);
-    });
+    if (orderId != null) {
+      try {
+        await UserService.updateOrderStatus(
+          orderId: orderId,
+          status: newStatus,
+        );
+
+        setState(() {
+          sourceList.remove(order);
+          targetList.add(
+            order..['status'] = newStatus,
+          ); // Update the order's status
+        });
+      } catch (e) {
+        print('Error updating order status: $e');
+      }
+    }
   }
 
   Widget _buildOrderCard(
-    Map<String, String> order, {
+    Map<String, dynamic> order, {
     bool showButtons = false,
     VoidCallback? onAccept,
     VoidCallback? onDecline,
   }) {
+    final itemName = order['name'] ?? 'Unnamed Item';
+    final quantity = order['quantity'] ?? 0;
+    final price = order['price'] ?? 0;
+    final totalPrice = order['total_price'] ?? 0;
+    final details = order['details'] ?? '';
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
@@ -173,11 +253,17 @@ class _BusinessPageState extends State<BusinessPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              order['order'] ?? 'No Name',
+              itemName,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(order['details'] ?? 'No Details'),
+            Text('Quantity: $quantity'),
+            Text('Price per unit: \$${price.toStringAsFixed(2)}'),
+            Text('Total price: \$${totalPrice.toStringAsFixed(2)}'),
+            if (details.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Details: $details'),
+            ],
             if (showButtons) ...[
               const SizedBox(height: 16),
               Row(
@@ -207,13 +293,37 @@ class _BusinessPageState extends State<BusinessPage> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-      ),
+  Widget _buildSection(
+    String title,
+    List<Map<String, dynamic>> orders, {
+    bool showButtons = false,
+    Function(int)? onAccept,
+    Function(int)? onDecline,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
+        if (orders.isEmpty)
+          const Center(child: Text('No orders in this section.'))
+        else
+          ...orders.asMap().entries.map((entry) {
+            final index = entry.key;
+            final order = entry.value;
+            return _buildOrderCard(
+              order,
+              showButtons: showButtons,
+              onAccept: () => onAccept?.call(index),
+              onDecline: () => onDecline?.call(index),
+            );
+          }),
+      ],
     );
   }
 
@@ -224,51 +334,41 @@ class _BusinessPageState extends State<BusinessPage> {
       appBar: AppBar(
         title: const Text('Business Dashboard'),
         backgroundColor: const Color(0xFFB388EB),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.pushNamed(context, '/businessSettings');
-            },
-          ),
-        ],
       ),
       drawer: AppDrawer(hasStore: hasStore),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSectionTitle('Pending Orders'),
-              if (pendingOrders.isEmpty)
-                const Center(child: Text('No pending orders.')),
-              ...pendingOrders.asMap().entries.map((entry) {
-                int index = entry.key;
-                var order = entry.value;
-                return _buildOrderCard(
-                  order,
-                  showButtons: true,
-                  onAccept: () => _acceptOrder(index),
-                  onDecline: () => _declineOrder(index),
-                );
-              }),
-
-              const SizedBox(height: 24),
-              _buildSectionTitle('Accepted Orders'),
-              if (acceptedOrders.isEmpty)
-                const Center(child: Text('No accepted orders.')),
-              ...acceptedOrders.map((order) => _buildOrderCard(order)).toList(),
-
-              const SizedBox(height: 24),
-              _buildSectionTitle('Declined Orders'),
-              if (declinedOrders.isEmpty)
-                const Center(child: Text('No declined orders.')),
-              ...declinedOrders.map((order) => _buildOrderCard(order)).toList(),
-            ],
-          ),
-        ),
-      ),
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSection(
+                      'Pending Orders',
+                      pendingOrders,
+                      showButtons: true,
+                      onAccept:
+                          (index) => _updateOrderStatus(
+                            order: pendingOrders[index],
+                            newStatus: 'accepted',
+                            sourceList: pendingOrders,
+                            targetList: acceptedOrders,
+                          ),
+                      onDecline:
+                          (index) => _updateOrderStatus(
+                            order: pendingOrders[index],
+                            newStatus: 'declined',
+                            sourceList: pendingOrders,
+                            targetList: declinedOrders,
+                          ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildSection('Accepted Orders', acceptedOrders),
+                    const SizedBox(height: 24),
+                    _buildSection('Declined Orders', declinedOrders),
+                  ],
+                ),
+              ),
     );
   }
 }

@@ -238,6 +238,12 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    double businessTitleSize = 24;
+    double businessDescriptionSize = 18;
+    double itemTitleSize = 24;
+    double itemDescriptionSize = 16;
+    double itemPriceSize = 18;
+
     return Scaffold(
       backgroundColor: Colors.blue[50],
       appBar: AppBar(
@@ -250,17 +256,15 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
           child: IconButton(
             icon: Icon(Icons.arrow_back, color: Color(0xFF1D1B20), size: 24),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pushReplacementNamed(context, '/business'),
           ),
         ),
         title: Text(
           businessName ?? 'Store',
           style: TextStyle(
-            fontFamily: 'Roboto',
-            fontSize: 24,
+            fontSize: businessTitleSize,
             fontWeight: FontWeight.w400,
             color: Colors.white,
-            height: 28 / 24,
           ),
         ),
         centerTitle: true,
@@ -278,67 +282,134 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                         SizedBox(height: 85),
                         // Store Information
                         Container(
-                          width: 301,
-                          height: 243,
+                          width: 300,
+                          height: 240,
+                          padding: EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Stack(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              Positioned(
-                                left: 19,
-                                top: 19,
-                                child: Text(
-                                  'Store Name',
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.black,
-                                  ),
-                                ),
+                              Expanded(
+                                child:
+                                    isEditing
+                                        ? Form(
+                                          key: _formKey,
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              TextFormField(
+                                                controller: _nameController,
+                                                decoration: InputDecoration(
+                                                  labelText: 'Business Name',
+                                                  border: OutlineInputBorder(),
+                                                ),
+                                                style: TextStyle(
+                                                  fontFamily: 'Inter',
+                                                  fontSize: businessTitleSize,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.black,
+                                                ),
+                                                validator: (value) {
+                                                  if (value == null ||
+                                                      value.trim().isEmpty) {
+                                                    return 'Please enter a business name';
+                                                  }
+                                                  return null;
+                                                },
+                                              ),
+                                              SizedBox(height: 16),
+                                              SizedBox(
+                                                width: 254,
+                                                child: TextFormField(
+                                                  controller: _descController,
+                                                  decoration: InputDecoration(
+                                                    labelText: 'Description',
+                                                    border:
+                                                        OutlineInputBorder(),
+                                                  ),
+                                                  style: TextStyle(
+                                                    fontFamily: 'Inter',
+                                                    fontSize:
+                                                        businessDescriptionSize,
+                                                    fontWeight: FontWeight.w400,
+                                                    color: Colors.black,
+                                                  ),
+                                                  maxLines: 2,
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.trim().isEmpty) {
+                                                      return 'Please enter a description';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                        : Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _nameController.text,
+                                              style: TextStyle(
+                                                fontFamily: 'Inter',
+                                                fontSize: businessTitleSize,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                            SizedBox(height: 16),
+                                            SizedBox(
+                                              width: 254,
+                                              child: Text(
+                                                _descController.text,
+                                                style: TextStyle(
+                                                  fontFamily: 'Inter',
+                                                  fontSize:
+                                                      businessDescriptionSize,
+                                                  fontWeight: FontWeight.w400,
+                                                  color: Colors.black,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                               ),
-                              Positioned(
-                                left: 23,
-                                top: 67,
-                                child: Container(
-                                  width: 254,
-                                  child: Text(
-                                    _descController.text,
-                                    style: TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w400,
-                                      color: Colors.black,
+                              isEditing
+                                  ? IconButton(
+                                    icon: Icon(
+                                      Icons.save,
+                                      color: Color(0xFF1E1E1E),
+                                      size: 24,
                                     ),
+                                    onPressed:
+                                        () => {_toggleEdit(), _saveSettings()},
+                                  )
+                                  : IconButton(
+                                    icon: Icon(
+                                      Icons.edit_outlined,
+                                      color: Color(0xFF1E1E1E),
+                                      size: 24,
+                                    ),
+                                    onPressed: () => _toggleEdit(),
                                   ),
-                                ),
-                              ),
-                              Positioned(
-                                right: 25,
-                                top: 109,
-                                child: IconButton(
-                                  icon: Icon(
-                                    Icons.edit_outlined,
-                                    color: Color(0xFF1E1E1E),
-                                    size: 24,
-                                  ),
-                                  onPressed: () => _toggleEdit(),
-                                ),
-                              ),
                             ],
                           ),
                         ),
                         SizedBox(height: 28),
-                        // Items Section
                         Padding(
                           padding: const EdgeInsets.only(left: 10),
                           child: Text(
                             'Items',
                             style: TextStyle(
                               fontFamily: 'Inter',
-                              fontSize: 24,
+                              fontSize: itemTitleSize,
                               fontWeight: FontWeight.w700,
                               color: Colors.black,
                             ),
@@ -352,56 +423,62 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                             itemBuilder: (context, index) {
                               var item = items[index];
                               return Container(
-                                width: 296,
-                                height: 97,
+                                width: 300,
+                                height: 120,
+                                padding: EdgeInsets.all(20),
                                 margin: EdgeInsets.only(bottom: 40),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Stack(
-                                  children: [
-                                    Positioned(
-                                      left: 18,
-                                      top: 19,
-                                      child: Text(
-                                        item['name']?.toString() ?? '',
-                                        style: TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w400,
-                                          color: Colors.black,
+                                child: SizedBox(
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          SizedBox(
+                                            child: Text(
+                                              item['name']?.toString() ?? '',
+                                              style: TextStyle(
+                                                fontFamily: 'Inter',
+                                                fontSize: itemTitleSize,
+                                                fontWeight: FontWeight.w400,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(
+                                            child: Text(
+                                              item['description']?.toString() ??
+                                                  '',
+                                              style: TextStyle(
+                                                fontFamily: 'Inter',
+                                                fontSize: itemDescriptionSize,
+                                                fontWeight: FontWeight.w400,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(
+                                        child: IconButton(
+                                          icon: Icon(
+                                            Icons.edit_outlined,
+                                            color: Color(0xFF1E1E1E),
+                                            size: 24,
+                                          ),
+                                          onPressed: () {
+                                            // Handle item edit
+                                          },
                                         ),
                                       ),
-                                    ),
-                                    Positioned(
-                                      left: 19,
-                                      top: 56,
-                                      child: Text(
-                                        item['description']?.toString() ?? '',
-                                        style: TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w400,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      right: 25,
-                                      top: 37,
-                                      child: IconButton(
-                                        icon: Icon(
-                                          Icons.edit_outlined,
-                                          color: Color(0xFF1E1E1E),
-                                          size: 24,
-                                        ),
-                                        onPressed: () {
-                                          // Handle item edit
-                                        },
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               );
                             },
@@ -427,7 +504,7 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                                     top: 20,
                                     left: 40,
                                     right: 40,
-                                    bottom: 20
+                                    bottom: 20,
                                   ),
                                   height: 350,
                                   decoration: BoxDecoration(
@@ -441,9 +518,7 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                                       Container(
                                         width: 60,
                                         height: 4,
-                                        margin: EdgeInsets.only(
-                                          bottom: 12,
-                                        ),
+                                        margin: EdgeInsets.only(bottom: 12),
                                         decoration: BoxDecoration(
                                           color: Color(0xFFD9D9D9),
                                           borderRadius: BorderRadius.circular(
@@ -452,10 +527,10 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                                         ),
                                       ),
                                       Text(
-                                        'Edit Item',
+                                        'Add Item',
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
-                                          fontSize: 23,
+                                          fontSize: itemTitleSize,
                                           fontWeight: FontWeight.w700,
                                           color: Color(0xFFD9D9D9),
                                         ),
@@ -508,11 +583,10 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                                         child: TextField(
                                           controller: _itemDescController,
                                           maxLines: 2,
-                                          
+
                                           decoration: InputDecoration(
                                             labelText: 'Description',
                                             filled: true,
-                                            
                                           ),
                                         ),
                                       ),
@@ -521,9 +595,7 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                                         height: 56,
                                         child: ElevatedButton(
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: Color(
-                                              0xFFD9D9D9,
-                                            ),
+                                            backgroundColor: Color(0xFFD9D9D9),
                                             foregroundColor: Colors.black,
                                           ),
                                           onPressed: () {
@@ -532,7 +604,9 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                                           },
                                           child: Text(
                                             'Done',
-                                            style: TextStyle(fontSize: 18),
+                                            style: TextStyle(
+                                              fontSize: itemTitleSize,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -541,10 +615,11 @@ class _BusinessSettingsPageState extends State<BusinessSettingsPage> {
                                 ),
                           );
                         },
+
                         child: Icon(
-                          Icons.add_circle_outline,
+                          Icons.add_circle_rounded,
                           size: 100,
-                          color: Colors.black,
+                          color: const Color(0xFFB388EB),
                         ),
                       ),
                     ),
