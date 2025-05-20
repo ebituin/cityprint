@@ -444,6 +444,16 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
       return;
     }
 
+    // Calculate total price
+    double totalPrice = 0;
+    for (var item in items) {
+      final int quantity = _quantities[item['name']] ?? 0;
+      if (quantity > 0) {
+        totalPrice += (item['price'] as num) * quantity;
+      }
+    }
+
+    // Create order with pending payment status
     for (var item in items) {
       final int quantity = _quantities[item['name']] ?? 0;
 
@@ -454,9 +464,56 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
           'item_id': item['item_id'],
           'quantity': quantity,
           'total_price': totalPrice,
-          'status': 'pending',
+          'status': 'pending_payment',
         });
       }
+    }
+  }
+
+  Future<void> _processPayment() async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      );
+
+      // Simulate payment processing
+      await Future.delayed(Duration(seconds: 2));
+
+      // Update order status to paid
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser != null) {
+        await Supabase.instance.client
+            .from('orders')
+            .update({'status': 'paid'})
+            .eq('user_id', currentUser.id)
+            .eq('status', 'pending_payment');
+      }
+
+      // Close loading indicator
+      Navigator.pop(context);
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Payment successful!')),
+      );
+
+      // Navigate back
+      Navigator.pop(context);
+    } catch (e) {
+      // Close loading indicator
+      Navigator.pop(context);
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Payment failed. Please try again.')),
+      );
     }
   }
 
@@ -609,33 +666,57 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
               );
             }).toList(),
             SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () {
-                if (_quantities.values.any((quantity) => quantity > 0)) {
-                  _placeOrder();
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Order simulated.')));
-                } else {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('No items selected.')));
-                }
-              },
-              icon: Icon(Icons.shopping_cart_checkout),
-              label: Text(
-                'Place Order',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      if (_quantities.values.any((quantity) => quantity > 0)) {
+                        _placeOrder();
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text('Order placed. Proceed to payment.')));
+                      } else {
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text('No items selected.')));
+                      }
+                    },
+                    icon: Icon(Icons.shopping_cart_checkout),
+                    label: Text(
+                      'Add to Cart',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFB388EB),
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      textStyle: TextStyle(fontSize: 16),
+                    ),
+                  ),
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFB388EB),
-                padding: EdgeInsets.symmetric(vertical: 14),
-                textStyle: TextStyle(fontSize: 16),
-              ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _processPayment,
+                    icon: Icon(Icons.payment),
+                    label: Text(
+                      'Pay Now',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      textStyle: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
