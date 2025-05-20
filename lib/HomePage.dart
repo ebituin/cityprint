@@ -1,4 +1,5 @@
 import 'package:cityprint/auth_service.dart';
+import 'package:cityprint/mediaSize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase/supabase.dart';
@@ -41,93 +42,147 @@ class _AppDrawerState extends State<AppDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    SizeConfig.init(context);
     return Drawer(
       backgroundColor: const Color(0xFFD9D9D9),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                UserAccountsDrawerHeader(
-                  accountName: Text('CityPrint'),
-                  accountEmail: Text('Welcome to CityPrint!'),
-                  currentAccountPicture: CircleAvatar(
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person,
-                      size: 42,
-                      color: Colors.deepPurple,
-                    ),
-                  ),
-                  decoration: BoxDecoration(color: Colors.deepPurple),
-                ),
-                ListTile(
-                  leading: Icon(Icons.person_2_outlined, size: 24),
-                  title: Text('Account', style: TextStyle(fontSize: 20)),
-                  onTap: () {
-                    Navigator.pushReplacementNamed(context, '/business');
-                  },
-                ),
-                hasStore
-                    ? ListTile(
-                      leading: Icon(Icons.shopping_bag_outlined, size: 24),
-                      title: Text('Store', style: TextStyle(fontSize: 20)),
-                      onTap: () {
-                        Navigator.pushReplacementNamed(context, '/business');
-                      },
-                    )
-                    : ListTile(
-                      leading: Icon(Icons.shopping_bag_outlined, size: 24),
-                      title: Text(
-                        'Create Store',
-                        style: TextStyle(fontSize: 20),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  height: SizeConfig.screenHeight * 0.25,
+                  color: Colors.deepPurple,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: Colors.white,
+                        radius: 40,
+                        child: Icon(
+                          Icons.person,
+                          size: 42,
+                          color: Colors.deepPurple,
+                        ),
                       ),
-                      onTap: () {
-                        Navigator.pushReplacementNamed(
-                          context,
-                          '/signupbusiness',
-                        );
-                      },
-                    ),
-                ListTile(
-                  leading: Icon(Icons.settings_outlined, size: 24),
-                  title: Text('Settings', style: TextStyle(fontSize: 20)),
-                  onTap: () {
-                    Navigator.pushReplacementNamed(context, '/business');
-                  },
-                ),
-              ],
-            ),
-          ),
-          Container(
-            color: Colors.deepPurple,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.pushReplacementNamed(context, '/');
-                  AuthService.signOut();
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.exit_to_app, size: 40, color: Colors.white),
-                    SizedBox(width: 10),
-                    Text(
-                      'Logout',
-                      style: TextStyle(fontSize: 20, color: Colors.white),
-                    ),
-                  ],
+                      SizedBox(height: 5),
+                      Text(
+                        'Account Name',
+                        style: TextStyle(color: Colors.white, fontSize: 20),
+                      ),
+                      Text(
+                        'Welcome to CityPrint!',
+                        style: TextStyle(color: Colors.white, fontSize: 15),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
+          _buildAccountSection(Icon(Icons.add_ic_call_outlined), 'hi'),
         ],
       ),
     );
   }
 }
+
+Widget _buildAccountSection(Icon icon, String text) {
+  return Row(
+    children: [
+      GestureDetector(
+        onTap: () {},
+        child: Expanded(
+          child: Container(
+            child: Row(
+              children: [icon, Text(text, style: TextStyle(fontSize: 20))],
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+// Column(
+//         children: [
+//           Expanded(
+//             child: ListView(
+//               padding: EdgeInsets.zero,
+//               children: [
+//                 UserAccountsDrawerHeader(
+//                   accountName: Text('CityPrint'),
+//                   accountEmail: Text('Welcome to CityPrint!'),
+//                   currentAccountPicture: CircleAvatar(
+//                     backgroundColor: Colors.white,
+//                     child:
+//                   ),
+//                   decoration: BoxDecoration(color: Colors.deepPurple),
+//                 ),
+//                 ListTile(
+//                   leading:
+//                   title: Text('Account', style: TextStyle(fontSize: 20)),
+//                   onTap: () {
+//                     Navigator.pushReplacementNamed(context, '/business');
+//                   },
+//                 ),
+//                 hasStore
+//                     ? ListTile(
+//                       leading: Icon(Icons.shopping_bag_outlined, size: 24),
+//                       title: Text('Store', style: TextStyle(fontSize: 20)),
+//                       onTap: () {
+//                         Navigator.pushReplacementNamed(context, '/business');
+//                       },
+//                     )
+//                     : ListTile(
+//                       leading: Icon(Icons.shopping_bag_outlined, size: 24),
+//                       title: Text(
+//                         'Create Store',
+//                         style: TextStyle(fontSize: 20),
+//                       ),
+//                       onTap: () {
+//                         Navigator.pushReplacementNamed(
+//                           context,
+//                           '/signupbusiness',
+//                         );
+//                       },
+//                     ),
+//                 ListTile(
+//                   leading: Icon(Icons.settings_outlined, size: 24),
+//                   title: Text('Settings', style: TextStyle(fontSize: 20)),
+//                   onTap: () {
+//                     Navigator.pushReplacementNamed(context, '/business');
+//                   },
+//                 ),
+//               ],
+//             ),
+//           ),
+//           Container(
+//             color: Colors.deepPurple,
+//             child: Padding(
+//               padding: const EdgeInsets.symmetric(vertical: 8.0),
+//               child: GestureDetector(
+//                 onTap: () {
+//                   Navigator.pushReplacementNamed(context, '/');
+//                   AuthService.signOut();
+//                 },
+//                 child: Row(
+//                   mainAxisAlignment: MainAxisAlignment.center,
+//                   children: [
+//                     Icon(Icons.exit_to_app, size: 40, color: Colors.white),
+//                     SizedBox(width: 10),
+//                     Text(
+//                       'Logout',
+//                       style: TextStyle(fontSize: 20, color: Colors.white),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             ),
+//           ),
 
 // Home Page
 class HomePage extends StatefulWidget {
@@ -413,7 +468,7 @@ class BusinessDetailPage extends StatefulWidget {
 
 class _BusinessDetailPageState extends State<BusinessDetailPage> {
   final Map<String, int> _quantities = {};
-  int totalPrice = 99;
+  late int totalPrice;
   int quantity = 0;
 
   @override
@@ -437,7 +492,6 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
 
     final storeOwnerId = widget.business['user_id'];
     if (currentUser.id == storeOwnerId) {
-      // 🛑 Show error: cannot order from own store
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("You can't order from your own store.")),
       );
@@ -453,7 +507,7 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
           'business_id': widget.business['business_id'],
           'item_id': item['item_id'],
           'quantity': quantity,
-          'total_price': totalPrice,
+          'total_price': item['price'] * quantity,
           'status': 'pending',
         });
       }
