@@ -64,9 +64,22 @@ class _AppDrawerState extends State<AppDrawer> {
                 ),
                 ListTile(
                   leading: Icon(Icons.person_2_outlined, size: 24),
-                  title: Text('Account', style: TextStyle(fontSize: 20)),
+                  title: Text('Profile', style: TextStyle(fontSize: 20)),
                   onTap: () {
-                    Navigator.pushReplacementNamed(context, '/business');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => ProfilePage()),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.shopping_cart_outlined, size: 24),
+                  title: Text('Orders', style: TextStyle(fontSize: 20)),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => OrdersPage()),
+                    );
                   },
                 ),
                 hasStore
@@ -721,6 +734,444 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// Profile Page
+class ProfilePage extends StatefulWidget {
+  @override
+  _ProfilePageState createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _birthdateController = TextEditingController();
+  final _emergencyContactController = TextEditingController();
+  String _selectedGender = 'Male';
+  bool _isLoading = true;
+  bool _isEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _addressController.dispose();
+    _birthdateController.dispose();
+    _emergencyContactController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final response = await Supabase.instance.client
+            .from('profiles')
+            .select()
+            .eq('user_id', user.id)
+            .single();
+
+        if (response != null) {
+          setState(() {
+            _usernameController.text = response['username'] ?? '';
+            _phoneController.text = response['phone'] ?? '';
+            _emailController.text = response['email'] ?? '';
+            _addressController.text = response['address'] ?? '';
+            _birthdateController.text = response['birthdate'] ?? '';
+            _emergencyContactController.text = response['emergency_contact'] ?? '';
+            _selectedGender = response['gender'] ?? 'Male';
+            _isLoading = false;
+          });
+        } else {
+          // Create new profile if it doesn't exist
+          await Supabase.instance.client.from('profiles').insert({
+            'user_id': user.id,
+            'email': user.email,
+          });
+          setState(() {
+            _emailController.text = user.email ?? '';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading profile: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    try {
+      setState(() => _isLoading = true);
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        await Supabase.instance.client.from('profiles').upsert({
+          'user_id': user.id,
+          'username': _usernameController.text,
+          'phone': _phoneController.text,
+          'email': _emailController.text,
+          'address': _addressController.text,
+          'birthdate': _birthdateController.text,
+          'emergency_contact': _emergencyContactController.text,
+          'gender': _selectedGender,
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Profile updated successfully')),
+        );
+        setState(() => _isEditing = false);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating profile: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Profile', style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFFB388EB),
+        actions: [
+          IconButton(
+            icon: Icon(_isEditing ? Icons.save : Icons.edit),
+            onPressed: () {
+              if (_isEditing) {
+                _saveProfile();
+              } else {
+                setState(() => _isEditing = true);
+              }
+            },
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white,
+                    Colors.purple.shade50,
+                  ],
+                ),
+              ),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Stack(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 10,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: CircleAvatar(
+                                radius: 60,
+                                backgroundColor: Colors.white,
+                                child: Icon(
+                                  Icons.person,
+                                  size: 60,
+                                  color: const Color(0xFFB388EB),
+                                ),
+                              ),
+                            ),
+                            if (_isEditing)
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: const Color(0xFFB388EB),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 5,
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
+                                  ),
+                                  child: IconButton(
+                                    icon: Icon(Icons.camera_alt, size: 20),
+                                    color: Colors.white,
+                                    onPressed: () {
+                                      // TODO: Implement image upload
+                                    },
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 32),
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Personal Information',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFB388EB),
+                                ),
+                              ),
+                              SizedBox(height: 16),
+                              TextFormField(
+                                controller: _usernameController,
+                                decoration: InputDecoration(
+                                  labelText: 'Username',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  prefixIcon: Icon(Icons.person),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                ),
+                                enabled: _isEditing,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your username';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              SizedBox(height: 16),
+                              TextFormField(
+                                controller: _birthdateController,
+                                decoration: InputDecoration(
+                                  labelText: 'Birthdate',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  prefixIcon: Icon(Icons.calendar_today),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                ),
+                                enabled: _isEditing,
+                                readOnly: true,
+                                onTap: _isEditing
+                                    ? () async {
+                                        final DateTime? picked = await showDatePicker(
+                                          context: context,
+                                          initialDate: DateTime.now(),
+                                          firstDate: DateTime(1900),
+                                          lastDate: DateTime.now(),
+                                        );
+                                        if (picked != null) {
+                                          _birthdateController.text =
+                                              "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                                        }
+                                      }
+                                    : null,
+                              ),
+                              SizedBox(height: 16),
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey.shade400),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: _selectedGender,
+                                    isExpanded: true,
+                                    padding: EdgeInsets.symmetric(horizontal: 16),
+                                    items: ['Male', 'Female', 'Other']
+                                        .map((gender) => DropdownMenuItem(
+                                              value: gender,
+                                              child: Text(gender),
+                                            ))
+                                        .toList(),
+                                    onChanged: _isEditing
+                                        ? (value) {
+                                            if (value != null) {
+                                              setState(() => _selectedGender = value);
+                                            }
+                                          }
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Contact Information',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFB388EB),
+                                ),
+                              ),
+                              SizedBox(height: 16),
+                              TextFormField(
+                                controller: _phoneController,
+                                decoration: InputDecoration(
+                                  labelText: 'Phone Number',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  prefixIcon: Icon(Icons.phone),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                ),
+                                enabled: _isEditing,
+                                keyboardType: TextInputType.phone,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your phone number';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              SizedBox(height: 16),
+                              TextFormField(
+                                controller: _emailController,
+                                decoration: InputDecoration(
+                                  labelText: 'Email',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  prefixIcon: Icon(Icons.email),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                ),
+                                enabled: _isEditing,
+                                keyboardType: TextInputType.emailAddress,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your email';
+                                  }
+                                  if (!value.contains('@')) {
+                                    return 'Please enter a valid email';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              SizedBox(height: 16),
+                              TextFormField(
+                                controller: _emergencyContactController,
+                                decoration: InputDecoration(
+                                  labelText: 'Emergency Contact',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  prefixIcon: Icon(Icons.emergency),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                ),
+                                enabled: _isEditing,
+                                keyboardType: TextInputType.phone,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter emergency contact';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Address Information',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFB388EB),
+                                ),
+                              ),
+                              SizedBox(height: 16),
+                              TextFormField(
+                                controller: _addressController,
+                                decoration: InputDecoration(
+                                  labelText: 'Complete Address',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  prefixIcon: Icon(Icons.location_on),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                ),
+                                enabled: _isEditing,
+                                maxLines: 3,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your address';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
     );
   }
 }
