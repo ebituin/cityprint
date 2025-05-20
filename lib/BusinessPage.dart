@@ -29,7 +29,7 @@ class _AppDrawerState extends State<AppDrawer> {
                     child: Icon(
                       Icons.person,
                       size: 42,
-                      color: Colors.deepPurple,
+                      color: Color(0xFFB388EB),
                     ),
                   ),
                   decoration: BoxDecoration(color: Colors.deepPurple),
