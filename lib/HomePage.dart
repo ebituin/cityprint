@@ -45,98 +45,103 @@ class _AppDrawerState extends State<AppDrawer> {
     SizeConfig.init(context);
     return Drawer(
       backgroundColor: const Color(0xFFD9D9D9),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Container(
-                  padding: EdgeInsets.all(20),
-                  height: 200,
-                  color: Colors.deepPurple,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: Colors.white,
-                        radius: 40,
-                        child: Icon(
-                          Icons.person,
-                          size: 42,
-                          color: Colors.deepPurple,
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      Text(
-                        'Account Name',
-                        style: TextStyle(color: Colors.white, fontSize: 20),
-                      ),
-                      Text(
-                        'Welcome to CityPrint!',
-                        style: TextStyle(color: Colors.white, fontSize: 15),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: Column(
+      child: SizedBox(
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                _buildAccountSection(
-                  Icon(Icons.add_ic_call_outlined),
-                  'Account',
-                  () {},
-                ),
-                SizedBox(height: 20),
-                _buildAccountSection(
-                  Icon(Icons.shopping_bag_outlined),
-                  'Store',
-                  () {
-                    Navigator.pushReplacementNamed(context, '/business');
-                  },
-                ),
-                SizedBox(height: 20),
-                _buildAccountSection(
-                  Icon(Icons.settings_outlined),
-                  'Settings',
-                  () {},
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: SizedBox(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Container(
-                    height: SizeConfig.screenHeight * 0.07,
-                    padding: EdgeInsets.all(10),
-                    color: Colors.red,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.all(20),
+                    height: 200,
+                    color: Colors.deepPurple,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Icon(Icons.exit_to_app, color: Colors.white, size: 20),
-                        SizedBox(width: 10),
+                        CircleAvatar(
+                          backgroundColor: Colors.white,
+                          radius: 40,
+                          child: Icon(
+                            Icons.person,
+                            size: 42,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
+                        SizedBox(height: 5),
                         Text(
-                          'Logout',
+                          'Account Name',
                           style: TextStyle(color: Colors.white, fontSize: 20),
+                        ),
+                        Text(
+                          'Welcome to CityPrint!',
+                          style: TextStyle(color: Colors.white, fontSize: 15),
                         ),
                       ],
                     ),
                   ),
+                ),
+              ],
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(15.0),
+              child: Column(
+                children: [
+                  _buildAccountSection(
+                    Icon(Icons.add_ic_call_outlined),
+                    'Account',
+                    () {},
+                  ),
+                  SizedBox(height: 20),
+                  _buildAccountSection(
+                    Icon(Icons.shopping_bag_outlined),
+                    'Store',
+                    () {
+                      Navigator.pushReplacementNamed(context, '/business');
+                    },
+                  ),
+                  SizedBox(height: 20),
+                  _buildAccountSection(
+                    Icon(Icons.settings_outlined),
+                    'Settings',
+                    () {},
+                  ),
                 ],
               ),
             ),
-          ),
-        ],
+            Expanded(
+              child: SizedBox(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      height: SizeConfig.screenHeight * 0.07,
+                      padding: EdgeInsets.all(10),
+                      color: Colors.red,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.exit_to_app,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          SizedBox(width: 10),
+                          Text(
+                            'Logout',
+                            style: TextStyle(color: Colors.white, fontSize: 20),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
