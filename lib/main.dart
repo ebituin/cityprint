@@ -1,6 +1,6 @@
 import 'package:cityprint/BusinessPage.dart';
 import 'package:cityprint/BusinessSettingsPage.dart';
-import 'package:cityprint/HomePage.dart';
+import 'package:cityprint/home.dart';
 import 'package:cityprint/LoginScreen.dart';
 import 'package:cityprint/RoleSelectionScreen.dart';
 import 'package:cityprint/SignupBusinessScreen.dart';

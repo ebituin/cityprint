@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'user_service.dart'; // Ensure UserService is imported
+import 'service/database.dart';
 
 class AppDrawer extends StatefulWidget {
   final bool hasStore;
@@ -176,6 +176,7 @@ class _BusinessPageState extends State<BusinessPage> {
             orders.add(order);
           }
 
+          if (!mounted) return;
           setState(() {
             // Separate orders by their status
             pendingOrders =
@@ -188,18 +189,21 @@ class _BusinessPageState extends State<BusinessPage> {
           });
         } else {
           print('No orders found for the business.');
+          if (!mounted) return;
           setState(() {
             isLoading = false;
           });
         }
       } else {
         print('No user is currently logged in.');
+        if (!mounted) return;
         setState(() {
           isLoading = false;
         });
       }
     } catch (e) {
       print('Error fetching orders: $e');
+      if (!mounted) return;
       setState(() {
         isLoading = false;
       });
