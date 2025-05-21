@@ -49,11 +49,12 @@ class _AppDrawerState extends State<AppDrawer> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Expanded(
                 child: Container(
                   padding: EdgeInsets.all(20),
-                  height: SizeConfig.screenHeight * 0.25,
+                  height: 200,
                   color: Colors.deepPurple,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,23 +84,72 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
             ],
           ),
-          _buildAccountSection(Icon(Icons.add_ic_call_outlined), 'hi'),
+
+          Padding(
+            padding: const EdgeInsets.all(15.0),
+            child: Column(
+              children: [
+                _buildAccountSection(
+                  Icon(Icons.add_ic_call_outlined),
+                  'Account',
+                  () {},
+                ),
+                SizedBox(height: 20),
+                _buildAccountSection(
+                  Icon(Icons.shopping_bag_outlined),
+                  'Store',
+                  () {
+                    Navigator.pushReplacementNamed(context, '/business');
+                  },
+                ),
+                SizedBox(height: 20),
+                _buildAccountSection(
+                  Icon(Icons.settings_outlined),
+                  'Settings',
+                  () {},
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: SizedBox(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Container(
+                    height: SizeConfig.screenHeight * 0.07,
+                    padding: EdgeInsets.all(10),
+                    color: Colors.red,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.exit_to_app, color: Colors.white, size: 20),
+                        SizedBox(width: 10),
+                        Text(
+                          'Logout',
+                          style: TextStyle(color: Colors.white, fontSize: 20),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-Widget _buildAccountSection(Icon icon, String text) {
+Widget _buildAccountSection(Icon icon, String text, Function onTap) {
   return Row(
     children: [
       GestureDetector(
-        onTap: () {},
+        onTap: () => onTap,
         child: Expanded(
-          child: Container(
-            child: Row(
-              children: [icon, Text(text, style: TextStyle(fontSize: 20))],
-            ),
+          child: Row(
+            children: [icon, Text(text, style: TextStyle(fontSize: 20))],
           ),
         ),
       ),
@@ -531,9 +581,7 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
+          return Center(child: CircularProgressIndicator());
         },
       );
 
@@ -554,9 +602,9 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
       Navigator.pop(context);
 
       // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Payment successful!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Payment successful!')));
 
       // Navigate back
       Navigator.pop(context);
@@ -727,13 +775,15 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
                     onPressed: () {
                       if (_quantities.values.any((quantity) => quantity > 0)) {
                         _placeOrder();
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text('Order placed. Proceed to payment.')));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Order placed. Proceed to payment.'),
+                          ),
+                        );
                       } else {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text('No items selected.')));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('No items selected.')),
+                        );
                       }
                     },
                     icon: Icon(Icons.shopping_cart_checkout),
@@ -751,10 +801,22 @@ class _BusinessDetailPageState extends State<BusinessDetailPage> {
                     ),
                   ),
                 ),
-                SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: _processPayment,
+                    onPressed: () {
+                      if (_quantities.values.any((quantity) => quantity > 0)) {
+                        _placeOrder();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Order placed. Proceed to payment.'),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('No items selected.')),
+                        );
+                      }
+                    },
                     icon: Icon(Icons.payment),
                     label: Text(
                       'Pay Now',
