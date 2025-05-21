@@ -74,19 +74,44 @@ class AuthService {
 }
 
 class UserService {
-  static Future<void> insertUser(String id, String name, String email,
-      String birthdate, String phone, String emergencyContact, String address,
-      String gender) async {
-    await supabase.from('users').insert({
-      'user_id': id,
-      'name': name,
-      'email': email,
-      'birthdate': birthdate,
-      'phone': phone,
-      'emergencyContact': emergencyContact,
-      'address': address,
-      'gender': gender,
-    });
+  static Future<void> insertUser(
+    bool update,
+    String name,
+    String email,
+    String birthdate,
+    String phone,
+    String emergencyContact,
+    String address,
+    String gender,
+  ) async {
+    try {
+      final userId = (await Supabase.instance.client.auth.currentUser)!.id;
+
+      if (update) {
+        await supabase
+            .from('users')
+            .update({
+              'name': name,
+              'email': email,
+              'birthdate': birthdate,
+              'phone': phone,
+              'emergency_contact': emergencyContact,
+              'address': address,
+              'gender': gender,
+            })
+            .eq('user_id', userId);
+      } else {
+        if (userId == null) return;
+        await supabase.from('users').insert({
+          'user_id': userId,
+          'name': name,
+          'email': email,
+        });
+      }
+    } catch (e) {
+      print('Error in insertUser: $e');
+      throw Exception('Failed to insert user: $e');
+    }
   }
 
   static Future<void> insertBusiness(String userId, String businessName) async {
@@ -187,21 +212,31 @@ Future<Map<String, dynamic>?> getUserProfile() async {
 
     final prefs = await SharedPreferences.getInstance();
 
-    await prefs.setString('name', response?['name'] ?? '');
-    await prefs.setString('email', response?['email'] ?? '');
-    await prefs.setString('birthdate', response?['birthdate'] ?? '');
-    await prefs.setString('phone', response?['phone'] ?? '');
-    await prefs.setString(
-      'emergencyContact',
-      response?['emergencyContact'] ?? '',
-    );
-    await prefs.setString('address', response?['address'] ?? '');
-    await prefs.setString('gender', response?['gender'] ?? '');
+    // Save to prefs
+    await prefs.setString('name', response['name'] ?? '');
+    await prefs.setString('email', response['email'] ?? '');
+
+    await prefs.setString('birthdate', response['birthdate'].toString());
+
+    if (response['phone'] != null) {
+      await prefs.setString('phone', response['phone'].toString());
+    }
+    if (response['emergency_contact'] != null) {
+      await prefs.setString(
+        'emergency_contact',
+        response['emergency_contact'].toString(),
+      );
+    }
+    await prefs.setString('address', response['address'] ?? '');
+    if (response['gender'] != null) {
+      await prefs.setString('gender', response['gender'] ?? '');
+    }
+
     print(response?['name']);
     print(response?['email']);
     print(response?['birthdate']);
     print(response?['phone']);
-    print(response?['emergencyContact']);
+    print(response?['emergency_contact']);
     print(response?['address']);
     print(response?['gender']);
     return response;

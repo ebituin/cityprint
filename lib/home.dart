@@ -807,11 +807,16 @@ class _ProfilePageState extends State<ProfilePage> {
   final _addressController = TextEditingController();
   final _birthdateController = TextEditingController();
   final _emergencyContactController = TextEditingController();
-  String _selectedGender = 'Male';
+  String? _selectedGender;
   bool _isLoading = true;
   bool _isEditing = false;
   String? _name;
   String? _email;
+  String? _birthdate;
+  String? _phone;
+  String? _emergencyContact;
+  String? _address;
+  String? _gender;
 
   @override
   void initState() {
@@ -827,6 +832,11 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         _name = prefs.getString('name');
         _email = prefs.getString('email');
+        _birthdate = prefs.getString('birthdate');
+        _phone = prefs.getString('phone');
+        _emergencyContact = prefs.getString('emergency_contact');
+        _address = prefs.getString('address');
+        _gender = prefs.getString('gender');
       });
       setState(() {
         _isLoading = false;
@@ -855,24 +865,59 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       setState(() => _isLoading = true);
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user != null) {
-        await Supabase.instance.client.from('profiles').upsert({
-          'user_id': user.id,
-          'username': _usernameController.text,
-          'phone': _phoneController.text,
-          'email': _emailController.text,
-          'address': _addressController.text,
-          'birthdate': _birthdateController.text,
-          'emergency_contact': _emergencyContactController.text,
-          'gender': _selectedGender,
-        });
 
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Profile updated successfully')));
-        setState(() => _isEditing = false);
-      }
+      final prefs = await SharedPreferences.getInstance();
+
+      final name =
+          _usernameController.text.trim().isNotEmpty
+              ? _usernameController.text.trim()
+              : prefs.getString('name') ?? '';
+
+      final email =
+          _emailController.text.trim().isNotEmpty
+              ? _emailController.text.trim()
+              : prefs.getString('email') ?? '';
+
+      final birthdate =
+          _birthdateController.text.trim().isNotEmpty
+              ? _birthdateController.text.trim()
+              : prefs.getString('birthdate') ?? '';
+
+      final phone =
+          _phoneController.text.trim().isNotEmpty
+              ? _phoneController.text.trim()
+              : prefs.getString('phone') ?? '';
+
+      final emergencyContact =
+          _emergencyContactController.text.trim().isNotEmpty
+              ? _emergencyContactController.text.trim()
+              : prefs.getString('emergencyContact') ?? '';
+
+      final address =
+          _addressController.text.trim().isNotEmpty
+              ? _addressController.text.trim()
+              : prefs.getString('address') ?? '';
+
+      final gender =
+          _selectedGender != null && _selectedGender!.isNotEmpty
+              ? _selectedGender
+              : prefs.getString('gender') ?? '';
+
+      await UserService.insertUser(
+        true,
+        name,
+        email,
+        birthdate,
+        phone,
+        emergencyContact,
+        address,
+        gender!,
+      );
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Profile updated successfully')));
+      setState(() => _isEditing = false);
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -1003,18 +1048,12 @@ class _ProfilePageState extends State<ProfilePage> {
                                     fillColor: Colors.grey.shade50,
                                   ),
                                   enabled: _isEditing,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your username';
-                                    }
-                                    return null;
-                                  },
                                 ),
                                 SizedBox(height: 16),
                                 TextFormField(
                                   controller: _birthdateController,
                                   decoration: InputDecoration(
-                                    labelText: 'birthdate',
+                                    labelText: _birthdate,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),
@@ -1106,7 +1145,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 TextFormField(
                                   controller: _phoneController,
                                   decoration: InputDecoration(
-                                    labelText: 'phone',
+                                    labelText: _phone,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),
@@ -1116,12 +1155,16 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                   enabled: _isEditing,
                                   keyboardType: TextInputType.phone,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your phone number';
-                                    }
-                                    return null;
-                                  },
+                                  validator:
+                                      _phone == null
+                                          ? (value) {
+                                            if (value == null ||
+                                                value.isEmpty) {
+                                              return 'Please enter your phone number';
+                                            }
+                                            return null;
+                                          }
+                                          : null,
                                 ),
                                 SizedBox(height: 16),
                                 TextFormField(
@@ -1137,21 +1180,12 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                   enabled: _isEditing,
                                   keyboardType: TextInputType.emailAddress,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your email';
-                                    }
-                                    if (!value.contains('@')) {
-                                      return 'Please enter a valid email';
-                                    }
-                                    return null;
-                                  },
                                 ),
                                 SizedBox(height: 16),
                                 TextFormField(
                                   controller: _emergencyContactController,
                                   decoration: InputDecoration(
-                                    labelText: 'emergencyContact',
+                                    labelText: _emergencyContact,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),
@@ -1161,12 +1195,6 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                   enabled: _isEditing,
                                   keyboardType: TextInputType.phone,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter emergency contact';
-                                    }
-                                    return null;
-                                  },
                                 ),
                               ],
                             ),
@@ -1195,7 +1223,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 TextFormField(
                                   controller: _addressController,
                                   decoration: InputDecoration(
-                                    labelText: 'address',
+                                    labelText: _address,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),
@@ -1205,12 +1233,16 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                   enabled: _isEditing,
                                   maxLines: 3,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your address';
-                                    }
-                                    return null;
-                                  },
+                                  validator:
+                                      _address == null
+                                          ? (value) {
+                                            if (value == null ||
+                                                value.isEmpty) {
+                                              return 'Please enter your address';
+                                            }
+                                            return null;
+                                          }
+                                          : null,
                                 ),
                               ],
                             ),
